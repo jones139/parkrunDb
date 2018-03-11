@@ -1,0 +1,56 @@
+drop table if exists  runners;
+CREATE TABLE runners (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    club VARCHAR(50),
+    gender VARCHAR(1),
+    created DATETIME,
+    modified DATETIME
+);
+
+drop table if exists roles;
+CREATE TABLE roles (
+       id INTEGER PRIMARY KEY,
+       name VARCHAR(50),
+       created DATETIME,
+       modified DATETIME
+);
+insert into roles values(0, "Runner", "#10/03/2018#","#10/03/2018#");
+insert into roles values(1, "Volunteer", "#10/03/2018#","#10/03/2018#");
+
+/* parkruns are particular parkruns - e.g. Hartlepool, Albert */
+drop table if exists parkruns;
+create table parkruns (
+       id INTEGER PRIMARY KEY,
+       parkrunRef VARCHAR(50),     /* The Parkrun Ref No used by parkrun */
+       name VARCHAR(50),      /* Name of the parkrun */
+       created DATETIME,
+       modified DATETIME
+);
+insert into parkruns values(0, "hartlepool", "Hartlepool", "#10/03/2018#","#10/03/2018#");
+
+/* Events are a particular instance of a parkrun - e.g. parkrun event 169 */
+drop table if exists events;
+create table events (
+       id INTEGER PRIMARY KEY,
+       eventNo INTEGER,       /* e.g. Hartlepool Parkrun No 169 */
+       parkrunId INTEGER,     /* e.g. 01 for Hartlepool */
+       date DATETIME,
+       created DATETIME,
+       modified DATETIME
+);
+
+/* Runs are a particular runner taking part in a given event. */
+drop table if exists runs;
+create table runs (
+       id INTEGER PRIMARY KEY,
+       eventId INTEGER,
+       runnerId INTEGER,
+       roleId INTEGER,
+       note VARCHAR(100),
+       genderPos INTEGER,
+       ageCat VARCHAR(30),
+       runTime INTEGER,  /* time in seconds */
+       created DATETIME,
+       modified DATETIME
+);

@@ -58,7 +58,37 @@ def getParticipants(eventName,resultUrl):
             if href!=None:
                 runnerId = href['href'].split('=')[1]
                 runnerName = href.contents[0]
-                partList.append({'id':runnerId,'name':runnerName,'activity':'run','date':dateStr})
+                timeParts = cells[2].contents[0].split(':')
+                if (len(timeParts)==2):
+                    runnerTime = 60*int(timeParts[0])+int(timeParts[1])
+                else:
+                    runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
+                #print runnerName,timeParts,runnerTime
+                pos = int(cells[0].contents[0])
+                runnerAgeCat = cells[3].find("a").contents[0]
+                gender = cells[5].contents[0]
+                genderPos = int(cells[6].contents[0])
+                #print(cells[7])
+                if (len(cells[7].find("a").contents)>0):
+                    club = cells[7].find("a").contents[0]
+                else:
+                    club=''
+                note = cells[8].contents[0]
+                nRuns = int(cells[9].contents[0])
+                partList.append({
+                    'pos':pos,
+                    'id':runnerId,
+                    'name':runnerName,
+                    'activity':'run',
+                    'runTime': runnerTime,
+                    'ageCat': str(runnerAgeCat),
+                    'gender': str(gender),
+                    'genderPos': genderPos,
+                    'club': str(club),
+                    'note': str(note),
+                    'nRuns': nRuns,
+                    'date':dateStr
+                })
     # Now extract the names of the volunteers
     volTitleText = re.compile('Thanks to the volunteers')
     volTitle = soup.find("h3",text=volTitleText)
@@ -76,7 +106,7 @@ partList = []
 el = getEventsList("hartlepool")
 #print el
 
-for n in range(0,27):
+for n in range(0,55):
     pl = getParticipants("hartlepool",el[n])
     partList.extend(pl)
 
