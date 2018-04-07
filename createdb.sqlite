@@ -27,7 +27,7 @@ create table parkruns (
        created DATETIME,
        modified DATETIME
 );
-insert into parkruns values(0, "hartlepool", "Hartlepool", "#10/03/2018#","#10/03/2018#");
+/*insert into parkruns values(0, "hartlepool", "Hartlepool", "#10/03/2018#","#10/03/2018#");*/
 
 /* Events are a particular instance of a parkrun - e.g. parkrun event 169 */
 drop table if exists events;

@@ -30,6 +30,24 @@ class parkrunDbLib:
             parkrunName = "unknown"
         return parkrunName
         
+    def getParkrunId(self,prName):
+        sqlStr = "select id from parkruns where name=?"
+        cur = self.conn.execute(sqlStr,(prName,))
+        rows = cur.fetchall()
+        if (len(rows)>0):
+            parkrunId = rows[0][0]
+        else:
+            parkrunId = -1
+        return parkrunId
+
+    def addParkrun(self,prName):
+        sqlStr = "insert into parkruns (parkrunRef,name,created,modified) values(?, ? ,date('now'),date('now'));"
+        print type(prName), prName
+        cur = self.conn.execute(sqlStr,(prName,prName,))
+        prId = cur.lastrowid
+        self.conn.commit()
+        if (self.DEBUG): print "addParkrun - created parkrun %s with ID %d" % (prName,prId)
+        return prId
     
     #########################################
     # Events
@@ -160,7 +178,11 @@ class parkrunDbLib:
     
 
     
-#db = parkrunDbLib("parkrun.db")
-#print db.getEventId(0,"01/01/2018")
+db = parkrunDbLib("parkrun.db")
+print "Parkruns: ", db.getParkruns()
+print "Parkrun 0 = ", db.getParkrunName(0)
+print "Parkrun 0 events= ", db.getEvents(0)
+print "Parkrun 0 event on 01/01/2018 is event no ", db.getEventId(0,"01/01/2018")
+print db.getEventId(0,"01/01/2018")
 #print db.getEventId(0,"01/01/2018",True)
 #print db.getEventId(0,"01/01/2018")
