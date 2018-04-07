@@ -30,6 +30,9 @@ class TestEvents(dbTests):
         evId2 = self.db.getEventId(prId,self.db.dateStr2ts(dateStr))
         self.assertEqual(evId,evId2)
 
+        evId3 = self.db.getEventIdFromEventNo(prId,eventNo)
+        self.assertEqual(evId,evId3)
+        
     def testAddRun(self):
         dateStr = "31/01/2018"
         eventNo = 999

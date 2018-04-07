@@ -111,6 +111,25 @@ class parkrunDbLib:
             eventId = -1
         return eventId
     
+    def getEventIdFromEventNo(self,parkrunId,eventNo):
+        """ Check the database to see if we already have an event for parkrunId
+        with number eventNo. 
+        If so, return the event Id, or -1 if not.
+        """
+        sqlStr = "select id from events where parkrunId=? and eventNo=?"
+        sqlParams = (parkrunId,eventNo,)
+        if (self.DEBUG): print "sqlStr=%s." % sqlStr
+        if (self.DEBUG): print sqlParams
+        cur = self.conn.execute(sqlStr,sqlParams)
+        rows = cur.fetchall()
+        if (len(rows)>0): # event already exists
+            eventId = rows[0][0]
+            if (self.DEBUG): print "Found event id %d" % (eventId)
+        else:
+            eventId = -1
+        return eventId
+
+
     def addEvent(self,eventNo, parkrunId, dateVal):
         """ Create event number eventNo for parkrun parkrunId on date dateVal.
         DateVal must be a unix timestamp
@@ -213,12 +232,45 @@ class parkrunDbLib:
         if (prId==-1):
             return None
         else:
-            sqlStr = "select eventId, dateVal from events where parkrunId = ?"
+            #strftime('%d-%m-%Y', (date/1000)) as_string
+            sqlStr = ("select eventNo, id, dateVal, "
+                      "strftime('%d-%m-%Y',datetime(dateVal, 'unixepoch',"
+                      "'localtime')) as dateStr, "
+                      "(select count(id) from runs "
+                      "    where runs.eventId=events.Id and runs.roleId=0) "
+                      "    as runners, "
+                      "(select count(id) from runs "
+                      "    where runs.eventId=events.Id and runs.roleId=1) "
+                      "    as volunteers "
+                      "from events "
+                      "where parkrunId = ? order by dateVal desc"
+                      )
             sqlParams = (prId,)
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows
 
+    def getEventResults(self,parkrunStr,eventNo):
+        """ returns set of rows containing results for the given parkrun event.
+        """
+        prId = self.getParkrunId(parkrunStr)
+        eventId = self.getEventIdFromEventNo(prId,eventNo)
+        print ("getEventResults - parkrunStr=%s (id=%d), eventNo=%d (id=%d)"
+               % (parkrunStr,prId, eventNo, eventId))
+        if (prId==-1 | eventId==-1):
+            return None
+        else:
+            sqlStr = ("select finishPos, runners.name, runTime "
+                      "from runs, runners "
+                      "where runs.eventId = ? and runs.runnerId=runners.Id"
+                      " order by runs.finishPos asc"
+                      )
+            sqlParams = (eventId,)
+            cur = self.conn.execute(sqlStr,sqlParams)
+            rows = cur.fetchall()
+            return rows
+
+        
 if __name__ == "__main__":
     db = parkrunDbLib("parkrun.db")
     print "Parkruns: ", db.getParkruns()
