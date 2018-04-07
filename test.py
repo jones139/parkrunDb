@@ -4,32 +4,58 @@ Tests for parkrunDb
 """
 import unittest
 import json
+from parkrunDbLib import parkrunDbLib
 
-
-class TestEvent(unittest.TestCase):
-    def testGetId(self):
-        self.assertEqual(False,True)  # FIXME - do some real tests - initialise db first?
+class dbTests(unittest.TestCase):
+    def setUp(self):
+        print "setup()"
+        self.db = parkrunDbLib("test.db")
+        self.db.initialiseDb("createdb.sqlite")
         
 
-class TestJSON(unittest.TestCase):
-    def testJson(self):
-        riskObj = {"id": 1, "epri": "B11", "bu": "HRA"}
-        print riskObj
-        riskJSON = json.dumps(riskObj)
-        print riskJSON
-        riskObj2 = json.loads(riskJSON)
-        self.assertEqual(riskObj2['id'], 1)
-        self.assertEqual(riskObj2['epri'], "B11")
+class TestDates(dbTests):
+    def testDateConv(self):
+        dateStr = "31/01/2018"
+        ts = self.db.dateStr2ts(dateStr)
+        dateStr2 = self.db.ts2dateStr(ts)
+        print "DateStr=%s, ts=%d, DateStr2=%s" % (dateStr,ts,dateStr2)
+        self.assertEqual(dateStr,dateStr2)
 
-    def testJsonUnicode(self):
-        riskObj = {u"id": 1, u"epri": u"B11", u"bu": u"HRA"}
-        print riskObj
-        riskJSON = json.dumps(riskObj)
-        print riskJSON
-        riskObj2 = json.loads(riskJSON)
-        self.assertEqual(riskObj2['id'], 1)
-        self.assertEqual(riskObj2['epri'], "B11")
+class TestEvents(dbTests):
+    def testAddEvent(self):
+        dateStr = "31/01/2018"
+        eventNo = 999
+        prId = 1
+        evId = self.db.addEvent(eventNo,prId,self.db.dateStr2ts(dateStr))
+        evId2 = self.db.getEventId(prId,self.db.dateStr2ts(dateStr))
+        self.assertEqual(evId,evId2)
+
+    def testAddRun(self):
+        dateStr = "31/01/2018"
+        eventNo = 999
+        prId = 1
+        evId = self.db.addEvent(eventNo,prId,self.db.dateStr2ts(dateStr))
+
+        runnerId = 1
+        roleId = 1
+
+        self.assertEqual(self.db.getRunId(evId,runnerId,roleId),-1)
+        runId = self.db.addRun(evId,runnerId,roleId,999,"V45",60.2,1,3,"Note")
+        runId2 = self.db.getRunId(evId,runnerId,roleId)
+        self.assertEqual(runId,runId2)
         
+    def testAddRunner(self):
+        self.assertEqual(self.db.getRunnerId(123456),-1)
+        runnerId = self.db.addRunner(123456,"Blogs, Joe","HBRH","V45")
+        runnerId2 = self.db.getRunnerId(123456)
+        self.assertEqual(runnerId,runnerId2)
+
+        runnerId = self.db.addRunner(1234567,"Blogs, Joe2","HBRH","F40")
+        runnerId2 = self.db.getRunnerId(1234567)
+        self.assertEqual(runnerId,runnerId2)
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

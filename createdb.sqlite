@@ -1,6 +1,7 @@
 drop table if exists  runners;
 CREATE TABLE runners (
     id INTEGER PRIMARY KEY,
+    runnerNo integer,          /* Parkrun runner no */
     name VARCHAR(50) NOT NULL,
     club VARCHAR(50),
     gender VARCHAR(1),
@@ -15,8 +16,8 @@ CREATE TABLE roles (
        created DATETIME,
        modified DATETIME
 );
-insert into roles values(0, "Runner", "#10/03/2018#","#10/03/2018#");
-insert into roles values(1, "Volunteer", "#10/03/2018#","#10/03/2018#");
+insert into roles values(0, "Runner", date('now'),date('now'));
+insert into roles values(1, "Volunteer", date('now'),date('now'));
 
 /* parkruns are particular parkruns - e.g. Hartlepool, Albert */
 drop table if exists parkruns;
@@ -35,7 +36,7 @@ create table events (
        id INTEGER PRIMARY KEY,
        eventNo INTEGER,       /* e.g. Hartlepool Parkrun No 169 */
        parkrunId INTEGER,     /* e.g. 01 for Hartlepool */
-       date DATETIME,
+       dateVal DATETIME,
        created DATETIME,
        modified DATETIME
 );
@@ -48,8 +49,10 @@ create table runs (
        runnerId INTEGER,
        roleId INTEGER,
        note VARCHAR(100),
+       finishPos INTEGER,
        genderPos INTEGER,
        ageCat VARCHAR(30),
+       ageGrade REAL,
        runTime INTEGER,  /* time in seconds */
        created DATETIME,
        modified DATETIME

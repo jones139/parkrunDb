@@ -2,12 +2,39 @@
 
 import sqlite3
 import json
+import dateutil.parser
+import datetime, time
 
 class parkrunDbLib:
     DEBUG = True
     def __init__(self,dbFname):
         if (self.DEBUG): print "parkrunDbLib.__init()__: fname=%s" % dbFname
         self.conn = sqlite3.connect(dbFname)
+
+    ########################################
+    # Utilities
+    def dateStr2ts(self,dateStr):
+        """ Convert a string date dd/mm/yyyy to unix timestamp """
+        dt = dateutil.parser.parse(dateStr,dayfirst=True)
+        ts = time.mktime(dt.timetuple())
+        return ts
+
+    def ts2dateStr(self,ts):
+        """ Convert a unix timestamp to dd/mm/yyyy string
+        """
+        print type(ts),ts
+        return datetime.datetime.fromtimestamp(ts).strftime('%d/%m/%Y')
+
+    #########################################
+    # Initialise database
+    def initialiseDb(self,initFname):
+        print "Initialising Database with file %s" % initFname
+        f = open(initFname,"r")
+        sqlStr = f.read()
+        f.close()
+        cur = self.conn.executescript(sqlStr)
+        self.conn.commit()
+        
 
     #########################################
     # Parkruns
@@ -41,8 +68,11 @@ class parkrunDbLib:
         return parkrunId
 
     def addParkrun(self,prName):
-        sqlStr = "insert into parkruns (parkrunRef,name,created,modified) values(?, ? ,date('now'),date('now'));"
-        print type(prName), prName
+        sqlStr = ("insert into parkruns "
+                  "(parkrunRef,name,created,modified) "
+                  "values(?, ? ,date('now'),date('now'));")
+        if (self.DEBUG): print type(prName), prName
+        if (self.DEBUG): print sqlStr
         cur = self.conn.execute(sqlStr,(prName,prName,))
         prId = cur.lastrowid
         self.conn.commit()
@@ -62,13 +92,17 @@ class parkrunDbLib:
         
 
 
-    def getEventId(self,parkrunId,dateStr):
+    def getEventId(self,parkrunId,dateVal):
         """ Check the database to see if we already have an event for parkrunId
-        on date DateStr.  If so, return the event Id, or -1 if not.
+        on date DateVal.  DateVal must be a unix timestamp
+        If so, return the event Id, or -1 if not.
         """
         #Check if the event exists, if not create it.
-        sqlStr = "select id from events where parkrunId=? and date=?"
-        cur = self.conn.execute(sqlStr,(0,dateStr,))
+        sqlStr = "select id from events where parkrunId=? and dateVal=?"
+        sqlParams = (parkrunId,dateVal,)
+        if (self.DEBUG): print "sqlStr=%s." % sqlStr
+        if (self.DEBUG): print sqlParams
+        cur = self.conn.execute(sqlStr,sqlParams)
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
             eventId = rows[0][0]
@@ -77,35 +111,37 @@ class parkrunDbLib:
             eventId = -1
         return eventId
     
-    def createEvent(self,eventNo, parkrunId, date):
-        """ Create event number eventNo for parkrun parkrunId on date date.
+    def addEvent(self,eventNo, parkrunId, dateVal):
+        """ Create event number eventNo for parkrun parkrunId on date dateVal.
+        DateVal must be a unix timestamp
         Returns the new event ID
         """
         # create an event
-        sqlStr = "insert into events (eventNo, parkrunId, date, created," \
+        sqlStr = "insert into events (eventNo, parkrunId, dateVal, created," \
         "modified) " \
-        " values (?,?,?,?,?)"
-        if(self.DEBUG): print "getEventId - sqlStr =%s." % sqlStr 
+        " values (?,?,?,date('now'),date('now'))"
+        sqlParams = (eventNo,
+                     parkrunId,
+                     dateVal,
+        )
+        if(self.DEBUG): print "addEvent - sqlStr =%s." % sqlStr 
+        if(self.DEBUG): print sqlParams
         cur = self.conn.execute(sqlStr,
-                                (eventNo,
-                                 parkrunId,
-                                 date,
-                                 "date(now)",
-                                 "date(now)",)
+                                sqlParams
         )
         eventId = cur.lastrowid
         self.conn.commit()
-        if (self.DEBUG): print "getEventId - created event %d for date %s" % (eventId,date)
+        if (self.DEBUG): print "addEvent - created event %d for date %d (%s)" % (eventId,dateVal,self.ts2dateStr(dateVal))
         return eventId
 
     #########################################
     # Runners
-    def getRunnerId(self,runnerId):
-        """ Look in the runners table to see if runnerId exists.  Return -1
+    def getRunnerId(self,runnerNo):
+        """ Look in the runners table to see if runnerNo exists.  Return -1
         if not.
         """
-        sqlStr = "select id from runners where id=?"
-        cur = self.conn.execute(sqlStr,(runnerId,))
+        sqlStr = "select id from runners where runnerNo=?"
+        cur = self.conn.execute(sqlStr,(runnerNo,))
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
             runnerId = rows[0][0]
@@ -114,23 +150,19 @@ class parkrunDbLib:
             runnerId = -1
         return runnerId
         
-    def createRunner(self,runnerId, nameStr, clubStr, genderStr):
+    def addRunner(self,runnerNo, nameStr, clubStr, genderStr):
         """ Create runner record for runnerId
         Returns the new runner ID
         """
         # create a runner
-        sqlStr = "insert into runners (id, name, club, gender, created," \
+        sqlStr = "insert into runners (runnerNo, name, club, gender, created," \
         "modified) " \
-        " values (?,?,?,?,?,?)"
+        " values (?,?,?,?,date('now'), date('now'))"
+        sqlParams = (runnerNo,nameStr,clubStr,genderStr,)
         if(self.DEBUG): print "createRunner - sqlStr =%s." % sqlStr 
-        cur = self.conn.execute(sqlStr,
-                                (runnerId,
-                                 nameStr,
-                                 clubStr,
-                                 genderStr,
-                                 "date(now)",
-                                 "date(now)",)
-        )
+        if(self.DEBUG): print sqlParams
+        cur = self.conn.execute(sqlStr, sqlParams)
+
         runnerId = cur.lastrowid
         self.conn.commit()
         if (self.DEBUG): print "createRunner - created runner %d" % (runnerId)
@@ -153,36 +185,46 @@ class parkrunDbLib:
             runId = -1
         return runId
         
-    def createRun(self,eventId, runnerId, roleId, runTime):
+    def addRun(self,eventId, runnerId, roleId, runTime,ageCat,ageGrade,finishPos,genderPos,note):
         """ Create run for runner runnerId at event eventId doing role roleID
         in runTime seconds.
         Returns the new run ID
         """
         # create an event
-        sqlStr = "insert into runs (eventId, runnerId, roleId, runTime, created," \
+        sqlStr = "insert into runs (eventId, runnerId, roleId, finishPos, genderPos, ageCat,ageGrade,note,runTime, created," \
         "modified) " \
-        " values (?,?,?,?,?,?)"
-        if(self.DEBUG): print "createRun - sqlStr =%s." % sqlStr 
-        cur = self.conn.execute(sqlStr,
-                                (eventId,
-                                 runnerId,
-                                 roleId,
-                                 runTime,
-                                 "date(now)",
-                                 "date(now)",)
-        )
+        " values (?,?,?,?,?,?,?,?,?,date('now'),date('now'))"
+        sqlParams = (eventId,runnerId, roleId,  finishPos,genderPos,
+                     ageCat,ageGrade,note,runTime,)
+        if(self.DEBUG): print "addRun - sqlStr =%s." % sqlStr 
+        if(self.DEBUG): print sqlParams
+        cur = self.conn.execute(sqlStr,sqlParams)
         runId = cur.lastrowid
         self.conn.commit()
         if (self.DEBUG): print "createRun - created run %d" % (runId)
         return runId
-    
 
-    
-db = parkrunDbLib("parkrun.db")
-print "Parkruns: ", db.getParkruns()
-print "Parkrun 0 = ", db.getParkrunName(0)
-print "Parkrun 0 events= ", db.getEvents(0)
-print "Parkrun 0 event on 01/01/2018 is event no ", db.getEventId(0,"01/01/2018")
-print db.getEventId(0,"01/01/2018")
-#print db.getEventId(0,"01/01/2018",True)
-#print db.getEventId(0,"01/01/2018")
+    #############################
+    # Queries
+    def getEventHistory(self,parkrunStr):
+        """ returns a cursor pointing to the event history for the given parkrun.
+        """
+        prId = self.getParkrunId(parkrunStr)
+        if (prId==-1):
+            return None
+        else:
+            sqlStr = "select eventId, dateVal from events where parkrunId = ?"
+            sqlParams = (prId,)
+            cur = self.conn.execute(sqlStr,sqlParams)
+            rows = cur.fetchall()
+            return rows
+
+if __name__ == "__main__":
+    db = parkrunDbLib("parkrun.db")
+    print "Parkruns: ", db.getParkruns()
+    print "Parkrun 0 = ", db.getParkrunName(0)
+    print "Parkrun 0 events= ", db.getEvents(0)
+    print "Parkrun 0 event on 01/01/2018 is event no ", db.getEventId(0,"01/01/2018")
+    print db.getEventId(0,"01/01/2018")
+    #print db.getEventId(0,"01/01/2018",True)
+    #print db.getEventId(0,"01/01/2018")

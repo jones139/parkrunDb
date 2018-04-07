@@ -11,15 +11,29 @@ import json
 import argparse
 import os
 
+def getParkrunId(db,prName):
+    """ 
+    find the Id of parkrun named prName in sqlite parkrunLib database db.
+    if prName is not in the database, it is added and the new ID returned.
+    """
+    prId = db.getParkrunId(prName)
+    if (prId==-1):
+        print "Parkrun %s not in database - adding it" % prName
+        print db.addParkrun(prName)
+        prId = db.getParkrunId(prName)
+    print "prId= %d " % prId
+    return prId
+
 def importHtmlFile(db,fname):
     partList = []
 
+    # read all the text of the file into htmlStr
     f = open(fname,"r")
-    html = f.read()
+    htmlStr = f.read()
     #print html
     f.close()
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(htmlStr, 'html.parser')
 
     # Get event details
     print soup.find("h2").contents[0]
@@ -28,21 +42,25 @@ def importHtmlFile(db,fname):
     dateStr = soup.find("h2").contents[0].split('-')[1].split()[0]
     print prName, eventNo, dateStr
 
-    prId = db.getParkrunId(prName)
+    dateTs = db.dateStr2ts(dateStr)
 
-    if (prId==-1):
-        print "Parkrun %s not in database - adding it" % prName
-        print db.addParkrun(prName)
-        prId = db.getParkrunId(prName)
-    print "prId= %d " % prId
-    
+    prId = getParkrunId(db,prName)
+    print "prId = %d" % prId
+    eventId = db.getEventId(prId,dateTs)
+    if (eventId==-1):
+        print "No event found in database for %s parkrun on %s - adding it" \
+            % (prName,dateStr)
+        eventId = db.addEvent(eventNo, prId, dateTs)
+
+    print "eventId=%d" % eventId
     resultsTable = soup.find( "table", {"id":"results"})
     for row in resultsTable.findAll("tr"):
         cells = row.findAll("td")
         if len(cells)>0:
+            finishPos = cells[0].contents[0]
             href = cells[1].find("a", href=True)
             if href!=None:
-                runnerId = href['href'].split('=')[1]
+                runnerNo = int(href['href'].split('=')[1])
                 runnerName = href.contents[0]
                 timeParts = cells[2].contents[0].split(':')
                 if (len(timeParts)==2):
@@ -52,6 +70,9 @@ def importHtmlFile(db,fname):
                 #print runnerName,timeParts,runnerTime
                 pos = int(cells[0].contents[0])
                 runnerAgeCat = cells[3].find("a").contents[0]
+                print cells[3],runnerAgeCat
+                runnerAgeGrade = cells[4].contents[0].split('%')[0]
+                print cells[4],runnerAgeGrade
                 gender = cells[5].contents[0]
                 genderPos = int(cells[6].contents[0])
                 #print(cells[7])
@@ -61,20 +82,17 @@ def importHtmlFile(db,fname):
                     club=''
                 note = cells[8].contents[0]
                 nRuns = int(cells[9].contents[0])
-                partList.append({
-                    'pos':pos,
-                    'id':runnerId,
-                    'name':runnerName,
-                    'activity':'run',
-                    'runTime': runnerTime,
-                    'ageCat': str(runnerAgeCat),
-                    'gender': str(gender),
-                    'genderPos': genderPos,
-                    'club': str(club),
-                    'note': str(note),
-                    'nRuns': nRuns,
-                    'date':dateStr
-                })
+                roleId = 0  # 0 = run, 1 = volunteer
+
+                runnerId = db.getRunnerId(runnerNo)
+                if (runnerId==-1):
+                    print "No Runner found in database with Barcode ID %d - adding him/her." \
+                        % (runnerNo)
+                    runnerId = db.addRunner(runnerNo, runnerName, club,gender)
+
+                
+                db.addRun(eventId, runnerId, roleId, runnerTime,
+                          str(runnerAgeCat), float(runnerAgeGrade),finishPos,genderPos,note)
     # Now extract the names of the volunteers
     volTitleText = re.compile('Thanks to the volunteers')
     volTitle = soup.find("h3",text=volTitleText)
