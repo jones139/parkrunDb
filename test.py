@@ -57,7 +57,19 @@ class TestEvents(dbTests):
         runnerId2 = self.db.getRunnerId(1234567)
         self.assertEqual(runnerId,runnerId2)
 
+    def testFindRunner(self):
+        self.db = parkrunDbLib("test.db","iddb.json")
+        self.db.initialiseDb("createdb.sqlite")
 
+        nameStr = "Roy WATKINS"
+        runnerId = self.db.getRunnerIdFromName(nameStr)
+        self.assertEqual(runnerId,1455360)
+
+        nameStr = "NON EXISTANT RUNNER"
+        runnerId = self.db.getRunnerIdFromName(nameStr)
+        self.assertEqual(runnerId,-1)
+
+        
 
 
 if __name__ == '__main__':

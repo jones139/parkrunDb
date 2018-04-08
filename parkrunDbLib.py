@@ -1,15 +1,26 @@
 #!/usr/bin/python
-
+"""
+Library to handle parkrun data in an sqlite database
+"""
 import sqlite3
 import json
 import dateutil.parser
 import datetime, time
 
 class parkrunDbLib:
-    DEBUG = True
-    def __init__(self,dbFname):
+    def __init__(self,dbFname, idFname = None, Debug=True):
+        """ Initialise the library using database file named dbFname.
+        Optional idFname parameter specifies a file containing a JSON
+        array of {id, name} objects to use as a lookup for unknown volunteer
+        runners.
+        FIXME:  Handle file not found errors, and incorreclty initialised
+        database files - this will just crash!
+        """
+        self.DEBUG = Debug
         if (self.DEBUG): print "parkrunDbLib.__init()__: fname=%s" % dbFname
         self.conn = sqlite3.connect(dbFname)
+        self.idFname = idFname
+        self.iddb = None  # We cache the contents of idFname the first time it is used.
 
     ########################################
     # Utilities
@@ -28,6 +39,10 @@ class parkrunDbLib:
     #########################################
     # Initialise database
     def initialiseDb(self,initFname):
+        """ Initialise the database with the sql scriptfile initFname.
+        **** This is likely to wipe all the data in the database, so use
+        carefully!!!! ****
+        """
         print "Initialising Database with file %s" % initFname
         f = open(initFname,"r")
         sqlStr = f.read()
@@ -168,7 +183,39 @@ class parkrunDbLib:
         else:
             runnerId = -1
         return runnerId
+
+    def getRunnerIdFromName(self,nameStr):
+        """ Look up the runner ID in the runners table to return the runner Id.
+        if it is not found, the self.idFname file is used to attempt to look it
+        up, and then add it to the main database.
+        Returns the runner ID or -1 if not found.
+        """
+        sqlStr = "select id from runners where name=?"
+        sqlParams=(nameStr,)
+        cur = self.conn.execute(sqlStr,sqlParams)
+        rows = cur.fetchall()
+        if (len(rows)>0): # event already exists
+            runnerId = rows[0][0]
+            if (self.DEBUG): print "getRunnerIdFromName() Found runner id %d in database" % (runnerId)
+        elif (self.idFname != None):
+            # Attempt to look up the name in idFname file
+            # idFname should contain a json array of {id,name} objects.
+            if (self.DEBUG): print "getRunnerIdFromName(): Attempting to use external runner id database."
+            if (self.iddb == None):
+                f = open(self.idFname,'r')
+                self.iddb = json.load(f)
+                f.close()
+            runnerId = -1
+            for idrec in self.iddb:
+                if idrec['name'] == nameStr and idrec['id']!= 'unknown':
+                    runnerId = int(idrec['id'])
+                    if (self.DEBUG): print "getRunnerIdFromName() Found runner id %d in id database" % (runnerId)
+        else:
+            if (self.DEBUG): print "getRunnerIdFromName() failed to find runner %s" % nameStr
+            runnerId = -1
+        return runnerId
         
+    
     def addRunner(self,runnerNo, nameStr, clubStr, genderStr):
         """ Create runner record for runnerId
         Returns the new runner ID
