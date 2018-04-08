@@ -170,6 +170,17 @@ class parkrunDbLib:
 
     #########################################
     # Runners
+    def getRunner(self,runnerId):
+        """return the data for runner id runnerId. """
+        sqlStr = "select runnerNo, name, club, gender from runners where id=?"
+        sqlParams=(runnerId,)
+        cur = self.conn.execute(sqlStr,sqlParams)
+        rows = cur.fetchall()
+        if (len(rows)>0):
+            return rows[0]
+        else:
+            return None
+        
     def getRunnerId(self,runnerNo):
         """ Look in the runners table to see if runnerNo exists.  Return -1
         if not.
@@ -184,36 +195,36 @@ class parkrunDbLib:
             runnerId = -1
         return runnerId
 
-    def getRunnerIdFromName(self,nameStr):
-        """ Look up the runner ID in the runners table to return the runner Id.
+    def getRunnerNoFromName(self,nameStr):
+        """ Look up the runner Name in the runners table to return the runner Number.
         if it is not found, the self.idFname file is used to attempt to look it
         up, and then add it to the main database.
-        Returns the runner ID or -1 if not found.
+        Returns the runner Number (=parkrun barcode no) or -1 if not found.
         """
-        sqlStr = "select id from runners where name=?"
+        sqlStr = "select runnerNo from runners where name=?"
         sqlParams=(nameStr,)
         cur = self.conn.execute(sqlStr,sqlParams)
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
-            runnerId = rows[0][0]
-            if (self.DEBUG): print "getRunnerIdFromName() Found runner id %d in database" % (runnerId)
+            runnerNo = rows[0][0]
+            if (self.DEBUG): print "getRunnerNoFromName() Found runner No %d in database" % (runnerNo)
         elif (self.idFname != None):
             # Attempt to look up the name in idFname file
             # idFname should contain a json array of {id,name} objects.
-            if (self.DEBUG): print "getRunnerIdFromName(): Attempting to use external runner id database."
+            if (self.DEBUG): print "getRunnerNoFromName(): Attempting to use external runner id database."
             if (self.iddb == None):
                 f = open(self.idFname,'r')
                 self.iddb = json.load(f)
                 f.close()
-            runnerId = -1
+            runnerNo = -1
             for idrec in self.iddb:
                 if idrec['name'] == nameStr and idrec['id']!= 'unknown':
-                    runnerId = int(idrec['id'])
-                    if (self.DEBUG): print "getRunnerIdFromName() Found runner id %d in id database" % (runnerId)
+                    runnerNo = int(idrec['id'])
+                    if (self.DEBUG): print "getRunnerNoFromName() Found runner No %d in id database" % (runnerNo)
         else:
-            if (self.DEBUG): print "getRunnerIdFromName() failed to find runner %s" % nameStr
-            runnerId = -1
-        return runnerId
+            if (self.DEBUG): print "getRunnerNoFromName() failed to find runner %s" % nameStr
+            runnerNo = -1
+        return runnerNo
         
     
     def addRunner(self,runnerNo, nameStr, clubStr, genderStr):
@@ -234,6 +245,28 @@ class parkrunDbLib:
         if (self.DEBUG): print "createRunner - created runner %d" % (runnerId)
         return runnerId
 
+    def updateRunner(self,runnerId, runnerNo, nameStr, clubStr, genderStr):
+        """ update runner record for runnerId
+        Returns the runnerId
+        """
+        # update runner
+        sqlStr = ("update runners set"
+                  "  runnerNo = ?, "
+                  "  name = ?, "
+                  "  club = ?, "
+                  "  gender = ?,"
+                  "  modified = date('now') "
+                  " where id = ?"
+                  )
+        sqlParams = (runnerNo,nameStr,clubStr,genderStr,runnerId,)
+        if(self.DEBUG): print "updateRunner - sqlStr =%s." % sqlStr 
+        if(self.DEBUG): print sqlParams
+        cur = self.conn.execute(sqlStr, sqlParams)
+        self.conn.commit()
+        if (self.DEBUG): print "updateRunner - updated %d rows" % (cur.rowcount)
+        return cur.rowcount
+
+    
     #############################################
     # Runs
     def getRunId(self,eventId,runnerId, roleId):

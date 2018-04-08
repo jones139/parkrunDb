@@ -100,6 +100,12 @@ def importHtmlFile(db,fname):
                 print "No Runner found in database with Barcode ID %d - adding him/her." \
                     % (runnerNo)
                 runnerId = db.addRunner(runnerNo, runnerName, club,gender)
+            else:
+                # Check if we have complete runner data (check gender set)
+                # (we won't if it was created as a volunteer)
+                runnerData = db.getRunner(runnerId)
+                if (runnerData[3]==""):
+                    db.updateRunner(runnerId,runnerNo,runnerName, club, gender)
 
             db.addRun(eventId, runnerId, roleId, runnerTime,
                       str(runnerAgeCat), float(runnerAgeGrade),
@@ -112,7 +118,26 @@ def importHtmlFile(db,fname):
     #volparText = volParText.split(':')[1]
     volList = volParText.split(', ')
     for volName in volList:
+        runnerNo = db.getRunnerNoFromName(volName)
+        if (runnerNo==-1):
+            print ("**** ERROR:  Failed to Find Volunteer %s in Database ****" % volName)
+            print ("    Please add entry to external id database and re-import")
+        # this runnerNo might have come from the external database, so check the
+        # main DB, and add the volunteer if necessary.
+        
         partList.append({'id':'unknown','name':volName,'activity':'vol','date':dateStr})
+        roleId = 1  # 0 = run, 1 = volunteer
+        runnerId = db.getRunnerId(runnerNo)
+        if (runnerId==-1):
+            print "No Runner found in database with Barcode No %d - adding him/her." \
+                % (runnerNo)
+            runnerId = db.addRunner(runnerNo, runnerName, "","")
+
+        db.addRun(eventId, runnerId, roleId, 9999,
+                  "", 0.0,
+                  0,0,"Volunteer")
+
+        
     return partList
 
 
@@ -120,6 +145,7 @@ def importHtmlFile(db,fname):
 ap = argparse.ArgumentParser()
 ap.add_argument("inDir", help="Directory containing the files to import (defaults to ./html_files")
 ap.add_argument("-db", "--database", help="Filename of Database to use (Defaults to ./parkrun.db")
+ap.add_argument("-id", "--iddb", help="Filename of external id lookup database (Defaults to None")
 
 ap.add_argument("-v", "--verbose",
                 help="produce verbose output for debugging",
@@ -137,13 +163,18 @@ if (args.database!=None):
 else:
     dbFname = "./parkrun.db"
 
+if (args.iddb!=None):
+    iddb = args.iddb
+else:
+    iddb = None
+
 
 if (os.path.exists(inDir)):
     if (os.path.isdir(inDir)):
         if (verbose):
             print "Input Directory %s exists - OK" % inDir
         if (os.path.exists(dbFname)):
-            db = parkrunDbLib(dbFname)
+            db = parkrunDbLib(dbFname,iddb)
             print "Opened Database"
             for root, dirs, files in os.walk(inDir):
                 for file in files:

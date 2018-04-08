@@ -49,25 +49,41 @@ class TestEvents(dbTests):
         
     def testAddRunner(self):
         self.assertEqual(self.db.getRunnerId(123456),-1)
-        runnerId = self.db.addRunner(123456,"Blogs, Joe","HBRH","V45")
+        runnerId = self.db.addRunner(123456,"Blogs, Joe","HBRH","M")
         runnerId2 = self.db.getRunnerId(123456)
         self.assertEqual(runnerId,runnerId2)
 
-        runnerId = self.db.addRunner(1234567,"Blogs, Joe2","HBRH","F40")
+        runnerData = self.db.getRunner(runnerId)
+        self.assertEqual(runnerData[0],123456)
+
+        
+        runnerId = self.db.addRunner(1234567,"Blogs, Joe2","HBRH","M")
         runnerId2 = self.db.getRunnerId(1234567)
         self.assertEqual(runnerId,runnerId2)
 
+    def testUpdateRunner(self):
+        # make sure we have a clean database
+        self.assertEqual(self.db.getRunnerId(123456),-1)
+        runnerId = self.db.addRunner(123456,"Blogs, Joe","HBRH","F")
+        nRows = self.db.updateRunner(runnerId, 123456,"Blogs, Joe","HBRH","M")
+        self.assertEqual(nRows,1)
+        runnerData = self.db.getRunner(runnerId)
+        self.assertEqual(runnerData[3],"M")
+        runnerId2 = self.db.getRunnerId(123456)
+        self.assertEqual(runnerId,runnerId2)
+
+        
     def testFindRunner(self):
         self.db = parkrunDbLib("test.db","iddb.json")
         self.db.initialiseDb("createdb.sqlite")
 
         nameStr = "Roy WATKINS"
-        runnerId = self.db.getRunnerIdFromName(nameStr)
-        self.assertEqual(runnerId,1455360)
+        runnerNo = self.db.getRunnerNoFromName(nameStr)
+        self.assertEqual(runnerNo,1455360)
 
         nameStr = "NON EXISTANT RUNNER"
-        runnerId = self.db.getRunnerIdFromName(nameStr)
-        self.assertEqual(runnerId,-1)
+        runnerNo = self.db.getRunnerNoFromName(nameStr)
+        self.assertEqual(runnerNo,-1)
 
         
 
