@@ -5,9 +5,9 @@ from parkrunDbLib import parkrunDbLib
 import argparse
 import os
 
-def getEventHistory(db,parkrunStr):
+def getEventHistory(db,parkrunStr,startTs,endTs):
     """ Produce an event history summary """
-    rows = db.getEventHistory(parkrunStr)
+    rows = db.getEventHistory(parkrunStr,startTs,endTs)
 
     for row in rows:
         print row
@@ -25,6 +25,8 @@ if __name__ == "__main__":
     ap.add_argument("-db", "--database", help="Filename of Database to use (Defaults to ./parkrun.db")
     ap.add_argument("-pr", "--parkrun", help="name of parkrun to process (defaults to 'Hartlepool'")
     ap.add_argument("-ev", "--event", help="event number to process (defaults to '1'")
+    ap.add_argument("-sd", "--startDate", help="earliest date to process (defaults to '01/01/2014'")
+    ap.add_argument("-ed", "--endDate", help="latest date to process (defaults to '01/01/2024'")
 
     ap.add_argument("-v", "--verbose",
                     help="produce verbose output for debugging",
@@ -41,6 +43,7 @@ if __name__ == "__main__":
         dbFname = args.database
     else:
         dbFname = "./parkrun.db"
+    db = parkrunDbLib(dbFname)
 
     if (args.parkrun!=None):
         parkrunStr = args.parkrun
@@ -51,11 +54,23 @@ if __name__ == "__main__":
         eventNo = int(args.event)
     else:
         eventNo = 1
+
+    if (args.startDate!=None):
+        startTs = db.dateStr2ts(args.startDate)
+    else:
+        startTs = db.dateStr2ts("01/01/2014")
+
+    if (args.endDate!=None):
+        endTs = db.dateStr2ts(args.endDate)
+    else:
+        endTs = db.dateStr2ts("01/01/2024")
+
+    if (verbose): print "startTs = %d (%s)" % (startTs,db.ts2dateStr(startTs))
+    if (verbose): print "endTs = %d (%s)" % (endTs,db.ts2dateStr(endTs))
         
-    db = parkrunDbLib(dbFname)
 
     if (cmdStr=="history"):
-        getEventHistory(db,parkrunStr)
+        getEventHistory(db,parkrunStr,startTs,endTs)
     elif (cmdStr=="results"):
         getEventResults(db,parkrunStr,eventNo)
     else:

@@ -225,8 +225,9 @@ class parkrunDbLib:
 
     #############################
     # Queries
-    def getEventHistory(self,parkrunStr):
-        """ returns a cursor pointing to the event history for the given parkrun.
+    def getEventHistory(self,parkrunStr,startTs,endTs):
+        """ returns a cursor pointing to the event history for the given parkrun
+        between timestamps startTs and endTs
         """
         prId = self.getParkrunId(parkrunStr)
         if (prId==-1):
@@ -243,9 +244,11 @@ class parkrunDbLib:
                       "    where runs.eventId=events.Id and runs.roleId=1) "
                       "    as volunteers "
                       "from events "
-                      "where parkrunId = ? order by dateVal desc"
+                      "where parkrunId = ? "
+                      " and dateVal>=? and dateVal<=? "
+                      "order by dateVal desc"
                       )
-            sqlParams = (prId,)
+            sqlParams = (prId,startTs,endTs)
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows

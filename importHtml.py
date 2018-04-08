@@ -57,9 +57,10 @@ def importHtmlFile(db,fname):
     for row in resultsTable.findAll("tr"):
         cells = row.findAll("td")
         if len(cells)>0:
-            finishPos = cells[0].contents[0]
+            finishPos = int(cells[0].contents[0])
             href = cells[1].find("a", href=True)
             if href!=None:
+                print "Prcessing Runner ",href
                 runnerNo = int(href['href'].split('=')[1])
                 runnerName = href.contents[0]
                 timeParts = cells[2].contents[0].split(':')
@@ -68,11 +69,10 @@ def importHtmlFile(db,fname):
                 else:
                     runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
                 #print runnerName,timeParts,runnerTime
-                pos = int(cells[0].contents[0])
                 runnerAgeCat = cells[3].find("a").contents[0]
-                print cells[3],runnerAgeCat
+                #print cells[3],runnerAgeCat
                 runnerAgeGrade = cells[4].contents[0].split('%')[0]
-                print cells[4],runnerAgeGrade
+                #print cells[4],runnerAgeGrade
                 gender = cells[5].contents[0]
                 genderPos = int(cells[6].contents[0])
                 #print(cells[7])
@@ -82,17 +82,28 @@ def importHtmlFile(db,fname):
                     club=''
                 note = cells[8].contents[0]
                 nRuns = int(cells[9].contents[0])
-                roleId = 0  # 0 = run, 1 = volunteer
+            else:
+                print "Handling unknown runner"
+                # Handle unknown runners
+                runnerNo = 0
+                runnerName = "Unknown"
+                club=""
+                gender=""
+                genderPos= 9999
+                runnerTime= 9999
+                runnerAgeCat=""
+                runnerAgeGrade = 0.0
+                note=""
+            roleId = 0  # 0 = run, 1 = volunteer
+            runnerId = db.getRunnerId(runnerNo)
+            if (runnerId==-1):
+                print "No Runner found in database with Barcode ID %d - adding him/her." \
+                    % (runnerNo)
+                runnerId = db.addRunner(runnerNo, runnerName, club,gender)
 
-                runnerId = db.getRunnerId(runnerNo)
-                if (runnerId==-1):
-                    print "No Runner found in database with Barcode ID %d - adding him/her." \
-                        % (runnerNo)
-                    runnerId = db.addRunner(runnerNo, runnerName, club,gender)
-
-                
-                db.addRun(eventId, runnerId, roleId, runnerTime,
-                          str(runnerAgeCat), float(runnerAgeGrade),finishPos,genderPos,note)
+            db.addRun(eventId, runnerId, roleId, runnerTime,
+                      str(runnerAgeCat), float(runnerAgeGrade),
+                      finishPos,genderPos,note)
     # Now extract the names of the volunteers
     volTitleText = re.compile('Thanks to the volunteers')
     volTitle = soup.find("h3",text=volTitleText)
