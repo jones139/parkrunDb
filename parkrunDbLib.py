@@ -363,13 +363,14 @@ class parkrunDbLib:
             rows = cur.fetchall()
             return rows
 
-    def getVolStats(self,parkrunStr,startTs,endTs,thresh,limit):
+    def getVolStats(self,parkrunStr,startTs,endTs,thresh,limit,orderBy):
         """ returns set of rows containing 
         volunteering statistics for the given parkrun between the specified
         dates.
         Only runners who have participated in at least thresh number of events
         are included.
         Returns 'limit' number of rows
+        OrderBy is an integer 1 = total activities, 2=runs, 3= volunteers
         """
         prId = self.getParkrunId(parkrunStr)
         print ("getVolStats - parkrunStr=%s (id=%d)"
@@ -408,6 +409,14 @@ class parkrunDbLib:
                 " order by count(runs.id) desc "
             )
 
+            orderByStr = ""
+            if (orderBy==1):
+                orderByStr = " order by total desc "
+            elif (orderBy==2):
+                orderByStr = " order by nr desc "
+            elif (orderBy==3):
+                orderByStr = " order by nv desc "
+            
             # We want all runners who have:
             #    - ran but not volunteered
             #    - volunteered but not ran
@@ -436,7 +445,7 @@ class parkrunDbLib:
                 "       (" +runsSqlStr + ") r"
                 "           on v.runnerNo = r.runnerNo"
                 " where total >= :thresh "
-                " order by total desc "
+                + orderByStr +
                 " limit :limit"
             )
             sqlParams['thresh']=thresh

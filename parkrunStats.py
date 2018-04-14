@@ -19,10 +19,10 @@ def getEventResults(db,parkrunStr,eventNo):
     for row in rows:
         print row
 
-def getVolStats(db,parkrunStr,startTs,endTs,thresh,limit):
+def getVolStats(db,parkrunStr,startTs,endTs,thresh,limit,orderBy):
     """ produce volunteer statistics for each participant
     """
-    rows = db.getVolStats(parkrunStr,startTs,endTs,thresh,limit)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,thresh,limit,orderBy)
     for row in rows:
         print row
     
@@ -35,6 +35,7 @@ if __name__ == "__main__":
     ap.add_argument("-ev", "--event", help="event number to process (defaults to '1'")
     ap.add_argument("-th", "--thresh", help="threshold number of runs to include in statistics - runners with less than this number of runs are excluded (defaults to '1')")
     ap.add_argument("-lim", "--limit", help="Number of rows of statistics returned (defaults to '10')")
+    ap.add_argument("-ob", "--orderBy", help="Order By (number)")
     ap.add_argument("-sd", "--startDate", help="earliest date to process (defaults to '01/01/2014'")
     ap.add_argument("-ed", "--endDate", help="latest date to process (defaults to '01/01/2024'")
 
@@ -70,6 +71,11 @@ if __name__ == "__main__":
     else:
         thresh = 1
 
+    if (args.orderBy!=None):
+        orderBy = int(args.orderBy)
+    else:
+        orderBy = 1
+
     if (args.limit!=None):
         limit = int(args.limit)
     else:
@@ -94,7 +100,7 @@ if __name__ == "__main__":
     elif (cmdStr=="results"):
         getEventResults(db,parkrunStr,eventNo)
     elif (cmdStr=="volstats"):
-        getVolStats(db,parkrunStr,startTs,endTs,thresh,limit)
+        getVolStats(db,parkrunStr,startTs,endTs,thresh,limit,orderBy)
     else:
         print "ERROR: Command %s not recognised" % cmdStr
 
