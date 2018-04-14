@@ -122,17 +122,17 @@ def importHtmlFile(db,fname):
         if (runnerNo==-1):
             print ("**** ERROR:  Failed to Find Volunteer %s in Database ****" % volName)
             print ("    Please add entry to external id database and re-import")
+        else:
+            print ("Found Runner %s - barcode = A%s." % (volName,runnerNo))
         # this runnerNo might have come from the external database, so check the
         # main DB, and add the volunteer if necessary.
-        
-        partList.append({'id':'unknown','name':volName,'activity':'vol','date':dateStr})
-        roleId = 1  # 0 = run, 1 = volunteer
         runnerId = db.getRunnerId(runnerNo)
         if (runnerId==-1):
             print "No Runner found in database with Barcode No %d - adding him/her." \
                 % (runnerNo)
-            runnerId = db.addRunner(runnerNo, runnerName, "","")
+            runnerId = db.addRunner(runnerNo, volName, "","")
 
+        roleId = 1  # 0 = run, 1 = volunteer
         db.addRun(eventId, runnerId, roleId, 9999,
                   "", 0.0,
                   0,0,"Volunteer")
