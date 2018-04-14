@@ -363,10 +363,13 @@ class parkrunDbLib:
             rows = cur.fetchall()
             return rows
 
-    def getVolStats(self,parkrunStr,startTs,endTs):
+    def getVolStats(self,parkrunStr,startTs,endTs,thresh,limit):
         """ returns set of rows containing 
         volunteering statistics for the given parkrun between the specified
         dates.
+        Only runners who have participated in at least thresh number of events
+        are included.
+        Returns 'limit' number of rows
         """
         prId = self.getParkrunId(parkrunStr)
         print ("getVolStats - parkrunStr=%s (id=%d)"
@@ -375,10 +378,11 @@ class parkrunDbLib:
             print "ERROR - Parkrun %s not found" % parkrunStr
             return None
         else:
-            # FIXME - THIS DOES NOT WORK YET
-            # below we filter runs to those at the required events using:
+            # Get the SQL string to give us a list of event IDs to use
+            # in queries.
             selEventsSql,sqlParams = self.getEventsListSql(prId,startTs,endTs)
 
+            # calculate number of runs for each runner
             runsSqlStr = (
                 " select name, runnerNo, count(runs.id) as nr"
                 "  from runners, runs "
@@ -388,10 +392,10 @@ class parkrunDbLib:
                 "   "
                 " and runs.runnerId=runners.Id "
                 " group by runnerId"
-                " order by count(runs.id) "
-
+                " order by count(runs.id) desc"
             )
 
+            # calculate number of volunteerings for each runner
             volsSqlStr = (
                 " select name, runnerNo, count(runs.id) as nv"
                 "  from runners, runs "
@@ -401,44 +405,42 @@ class parkrunDbLib:
                 "   "
                 " and runs.runnerId=runners.Id "
                 " group by runnerId"
-                " order by count(runs.id) "
+                " order by count(runs.id) desc "
             )
 
-            # This is a union - lists runs, then volunteers as separate rows.
-            sqlStr = ( "select r.name, r.runnerNo, r.nr  from "
-                       " (" +runsSqlStr + ") r"
-                       " union "
-                       " select v.name, v.runnerNo, v.nv from "
-                       " (" +volsSqlStr + ") v"
-                       )
-
-
             # We want all runners who have:
-            # ran but not volunteered
-            # volunteered but not ran
-            # volunteered and ran
+            #    - ran but not volunteered
+            #    - volunteered but not ran
+            #    - volunteered and ran
             # so we have to union together two queries to make sure we get
             # them all.
+            # The 'coalesce' statements are to force Null to be returned as zero
+            #     so that calculations work.
             sqlStr = (
-                "select r.name, r.runnerNo, r.nr, v.nv from "
+                "select r.name, r.runnerNo, coalesce(r.nr,0) as nr, "
+                "               coalesce(v.nv,0) as nv, "
+                "               coalesce(r.nr,0) + coalesce(v.nv,0) as total "
+                " from "
                 " (" +runsSqlStr + ") r"
                 "    left join "
                 "       (" +volsSqlStr + ") v"
                 "           on r.runnerNo = v.runnerNo"
+                "    where total >= :thresh "
                 " union  "
-                "select v.name, v.runnerNo, r.nr, v.nv from "
+                "select v.name, v.runnerNo, coalesce(r.nr,0) as nr, "
+                "              coalesce(v.nv,0) as nv, "
+                "              coalesce(r.nr,0) + coalesce(v.nv,0) as total "
+                " from "
                 " (" +volsSqlStr + ") v"
                 "    left outer join "
                 "       (" +runsSqlStr + ") r"
                 "           on v.runnerNo = r.runnerNo"
-                
+                " where total >= :thresh "
+                " order by total desc "
+                " limit :limit"
             )
-            #sqlStr = (
-            #    "select v.name, v.runnerNo, v.nv from "
-            #    " (" +volsSqlStr + ") v"
-            #    " order by v.nv "
-            #)
-
+            sqlParams['thresh']=thresh
+            sqlParams['limit']=limit
             
             if (self.DEBUG): print sqlStr,sqlParams
             cur = self.conn.execute(sqlStr,sqlParams)
