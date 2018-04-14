@@ -18,6 +18,14 @@ def getEventResults(db,parkrunStr,eventNo):
     rows = db.getEventResults(parkrunStr,eventNo)
     for row in rows:
         print row
+
+def getVolStats(db,parkrunStr,startTs,endTs):
+    """ produce volunteer statistics for each participant
+    """
+    rows = db.getVolStats(parkrunStr,startTs,endTs)
+    for row in rows:
+        print row
+    
         
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
@@ -73,6 +81,8 @@ if __name__ == "__main__":
         getEventHistory(db,parkrunStr,startTs,endTs)
     elif (cmdStr=="results"):
         getEventResults(db,parkrunStr,eventNo)
+    elif (cmdStr=="volstats"):
+        getVolStats(db,parkrunStr,startTs,endTs)
     else:
         print "ERROR: Command %s not recognised" % cmdStr
 

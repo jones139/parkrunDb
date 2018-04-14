@@ -305,6 +305,16 @@ class parkrunDbLib:
 
     #############################
     # Queries
+
+    def getEventsListSql(self,prId,startTs,endTs):
+        """ Returns (sql,paramDict) which is the 
+        SQL query to return the list of event IDs for parkrun prId
+        beween the specified dates, and a dictionary of the parameters.
+        """
+        sqlStr = "select id from events where parkrunId=:parkrunId and dateVal>=:startTs and dateVal<=:endTs order by dateVal"
+        paramDict = {"parkrunId":prId, "startTs":startTs,"endTs":endTs}
+        return sqlStr,paramDict
+
     def getEventHistory(self,parkrunStr,startTs,endTs):
         """ returns a cursor pointing to the event history for the given parkrun
         between timestamps startTs and endTs
@@ -352,6 +362,89 @@ class parkrunDbLib:
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows
+
+    def getVolStats(self,parkrunStr,startTs,endTs):
+        """ returns set of rows containing 
+        volunteering statistics for the given parkrun between the specified
+        dates.
+        """
+        prId = self.getParkrunId(parkrunStr)
+        print ("getVolStats - parkrunStr=%s (id=%d)"
+               % (parkrunStr,prId))
+        if (prId==-1 ):
+            print "ERROR - Parkrun %s not found" % parkrunStr
+            return None
+        else:
+            # FIXME - THIS DOES NOT WORK YET
+            # below we filter runs to those at the required events using:
+            selEventsSql,sqlParams = self.getEventsListSql(prId,startTs,endTs)
+
+            runsSqlStr = (
+                " select name, runnerNo, count(runs.id) as nr"
+                "  from runners, runs "
+                "    where runs.eventId in "
+                "      ("+selEventsSql+") "
+                "    and runs.roleId = 0 "
+                "   "
+                " and runs.runnerId=runners.Id "
+                " group by runnerId"
+                " order by count(runs.id) "
+
+            )
+
+            volsSqlStr = (
+                " select name, runnerNo, count(runs.id) as nv"
+                "  from runners, runs "
+                "    where runs.eventId in "
+                "      ("+selEventsSql+") "
+                "    and runs.roleId = 1 "
+                "   "
+                " and runs.runnerId=runners.Id "
+                " group by runnerId"
+                " order by count(runs.id) "
+            )
+
+            # This is a union - lists runs, then volunteers as separate rows.
+            sqlStr = ( "select r.name, r.runnerNo, r.nr  from "
+                       " (" +runsSqlStr + ") r"
+                       " union "
+                       " select v.name, v.runnerNo, v.nv from "
+                       " (" +volsSqlStr + ") v"
+                       )
+
+
+            # We want all runners who have:
+            # ran but not volunteered
+            # volunteered but not ran
+            # volunteered and ran
+            # so we have to union together two queries to make sure we get
+            # them all.
+            sqlStr = (
+                "select r.name, r.runnerNo, r.nr, v.nv from "
+                " (" +runsSqlStr + ") r"
+                "    left join "
+                "       (" +volsSqlStr + ") v"
+                "           on r.runnerNo = v.runnerNo"
+                " union  "
+                "select v.name, v.runnerNo, r.nr, v.nv from "
+                " (" +volsSqlStr + ") v"
+                "    left outer join "
+                "       (" +runsSqlStr + ") r"
+                "           on v.runnerNo = r.runnerNo"
+                
+            )
+            #sqlStr = (
+            #    "select v.name, v.runnerNo, v.nv from "
+            #    " (" +volsSqlStr + ") v"
+            #    " order by v.nv "
+            #)
+
+            
+            if (self.DEBUG): print sqlStr,sqlParams
+            cur = self.conn.execute(sqlStr,sqlParams)
+            rows = cur.fetchall()
+            return rows
+
 
         
 if __name__ == "__main__":
