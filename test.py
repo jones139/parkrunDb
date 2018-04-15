@@ -81,6 +81,11 @@ class TestEvents(dbTests):
         runnerNo = self.db.getRunnerNoFromName(nameStr)
         self.assertEqual(runnerNo,1455360)
 
+        nameStr = "Bobby WILLIAMS"
+        runnerNo = self.db.getRunnerNoFromName(nameStr)
+        self.assertEqual(runnerNo,1488327)
+        
+
         nameStr = "NON EXISTANT RUNNER"
         runnerNo = self.db.getRunnerNoFromName(nameStr)
         self.assertEqual(runnerNo,-1)

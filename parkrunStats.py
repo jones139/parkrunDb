@@ -35,7 +35,7 @@ if __name__ == "__main__":
     ap.add_argument("-ev", "--event", help="event number to process (defaults to '1'")
     ap.add_argument("-th", "--thresh", help="threshold number of runs to include in statistics - runners with less than this number of runs are excluded (defaults to '1')")
     ap.add_argument("-lim", "--limit", help="Number of rows of statistics returned (defaults to '10')")
-    ap.add_argument("-ob", "--orderBy", help="Order By (number)")
+    ap.add_argument("-ob", "--orderBy", help="Order By (number: 1=total activities, 2=number of runs, 3=number of volunteerings, 4=time on feet)")
     ap.add_argument("-sd", "--startDate", help="earliest date to process (defaults to '01/01/2014'")
     ap.add_argument("-ed", "--endDate", help="latest date to process (defaults to '01/01/2024'")
 

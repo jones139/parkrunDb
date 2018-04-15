@@ -385,7 +385,8 @@ class parkrunDbLib:
 
             # calculate number of runs for each runner
             runsSqlStr = (
-                " select name, runnerNo, count(runs.id) as nr"
+                " select name, runnerNo, count(runs.id) as nr, "
+                "       sum(runs.runTime) as tr"
                 "  from runners, runs "
                 "    where runs.eventId in "
                 "      ("+selEventsSql+") "
@@ -397,8 +398,15 @@ class parkrunDbLib:
             )
 
             # calculate number of volunteerings for each runner
+            # for volunteers timeOnFeet is the time of the slowest
+            # runner in the parkrun
             volsSqlStr = (
-                " select name, runnerNo, count(runs.id) as nv"
+                " select name, runnerNo, count(runs.id) as nv, "
+                " sum((select max(runTime) from runs "
+                "      where runs.eventId in "
+                "        ("+selEventsSql+") "
+                "      and runs.roleId = 0 "
+                "    )) as tv"
                 "  from runners, runs "
                 "    where runs.eventId in "
                 "      ("+selEventsSql+") "
@@ -416,6 +424,8 @@ class parkrunDbLib:
                 orderByStr = " order by nr desc "
             elif (orderBy==3):
                 orderByStr = " order by nv desc "
+            elif (orderBy==4):
+                orderByStr = " order by timeOnFeet desc "
             
             # We want all runners who have:
             #    - ran but not volunteered
@@ -428,7 +438,9 @@ class parkrunDbLib:
             sqlStr = (
                 "select r.name, r.runnerNo, coalesce(r.nr,0) as nr, "
                 "               coalesce(v.nv,0) as nv, "
-                "               coalesce(r.nr,0) + coalesce(v.nv,0) as total "
+                "               coalesce(r.nr,0) + coalesce(v.nv,0) as total, "
+                "               coalesce(r.tr,0), coalesce(v.tv,0), "
+                "               coalesce(r.tr,0) + coalesce(v.tv,0) as timeOnFeet "
                 " from "
                 " (" +runsSqlStr + ") r"
                 "    left join "
@@ -438,7 +450,9 @@ class parkrunDbLib:
                 " union  "
                 "select v.name, v.runnerNo, coalesce(r.nr,0) as nr, "
                 "              coalesce(v.nv,0) as nv, "
-                "              coalesce(r.nr,0) + coalesce(v.nv,0) as total "
+                "              coalesce(r.nr,0) + coalesce(v.nv,0) as total, "
+                "               coalesce(r.tr,0), coalesce(v.tv,0), "
+                "               coalesce(r.tr,0) + coalesce(v.tv,0) as timeOnFeet "
                 " from "
                 " (" +volsSqlStr + ") v"
                 "    left outer join "
