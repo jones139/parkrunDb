@@ -1,6 +1,10 @@
 #!/usr/bin/python
 
 # Download parkrun results from web site, and save to a folder.
+# ***WE ARE NOT ALLOWED OT USE THIS - Instead use a web browser to select the
+#                                     event history, and open each results page
+#                                     in turn and save it to the required folder.
+#
 # run ./getResults.py -h to see arguments.
 #
 # 06apr2018  GJ  ORIGINAL VERSION
