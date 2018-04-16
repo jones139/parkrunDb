@@ -470,6 +470,98 @@ class parkrunDbLib:
             rows = cur.fetchall()
             return rows
 
+    def getRunnerList(self,parkrunStr,startTs,endTs,thresh,limit):
+        """ returns a list of runnerIds 
+        of runners for the given parkrun between the specified
+        dates.
+        Only runners who have participated in at least thresh number of events
+        are included.
+        Returns 'limit' number of rows
+        """
+        prId = self.getParkrunId(parkrunStr)
+        if (self.DEBUG): print ("getRunnerList - parkrunStr=%s (id=%d)"
+                                % (parkrunStr,prId))
+        if (prId==-1 ):
+            print "ERROR - Parkrun %s not found" % parkrunStr
+            return None
+        else:
+            # Get the SQL string to give us a list of event IDs to use
+            # in queries.
+            selEventsSql,sqlParams = self.getEventsListSql(prId,startTs,endTs)
+
+            # calculate number of runs for each runner
+            sqlStr = (
+                " select runners.id, runners.name, runners.runnerNo, "
+                "       count(runs.id) as nr, "
+                "       sum(runs.runTime) as tr"
+                "  from runners, runs "
+                "    where runs.eventId in "
+                "      ("+selEventsSql+") "
+                "    and runs.roleId = 0 "
+                "   "
+                " and runs.runnerId=runners.Id "
+                " group by runnerId"
+                " having count(runs.id)>=:thresh "
+                " order by count(runs.id) desc"
+                " limit :limit "
+            )
+
+            sqlParams['thresh']=thresh
+            sqlParams['limit']=limit
+            
+            if (self.DEBUG): print sqlStr,sqlParams
+            cur = self.conn.execute(sqlStr,sqlParams)
+            rows = cur.fetchall()
+            return rows
+
+    def getRunnerHistory(self,runnerId, parkrunStr,startTs,endTs):
+        """ returns the run history for runner id runnerId
+        for the given parkrun between the specified dates
+        """
+        prId = self.getParkrunId(parkrunStr)
+        if (self.DEBUG): print ("getRunnerList - parkrunStr=%s (id=%d)"
+                                % (parkrunStr,prId))
+        if (prId==-1 ):
+            print "ERROR - Parkrun %s not found" % parkrunStr
+            return None
+        else:
+            # Get the SQL string to give us a list of event IDs to use
+            # in queries.
+            selEventsSql,sqlParams = self.getEventsListSql(prId,startTs,endTs)
+
+            if (self.DEBUG):
+                print "EVENTS LIST TO PROCESS: ",selEventsSql,sqlParams
+                cur = self.conn.execute(selEventsSql,sqlParams)
+                rows = cur.fetchall()
+                for r in rows:
+                    print r
+                
+            
+            # calculate number of runs for each runner
+            sqlStr = (
+                " select runs.eventId, events.dateVal, "
+                      "strftime('%d-%m-%Y',datetime(dateVal, 'unixepoch',"
+                      "'localtime')) as dateStr, "
+                "        runs.runnerId, runs.finishPos, "
+                "        runs.genderPos, "
+                "        runs.ageGrade, runs.runTime "
+                "  from events, runs "
+                "    where runs.eventId in "
+                "      ("+selEventsSql+") "
+                "    and events.id=runs.eventId "
+                "    and runs.roleId = 0 "
+                "    and runs.runnerId = :runnerId "
+                "   "
+                " order by events.dateVal asc"
+            )
+
+            sqlParams['runnerId']=runnerId
+            
+            if (self.DEBUG): print sqlStr,sqlParams
+            cur = self.conn.execute(sqlStr,sqlParams)
+            rows = cur.fetchall()
+            return rows
+
 
         
 if __name__ == "__main__":

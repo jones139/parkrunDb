@@ -4,6 +4,7 @@
 from parkrunDbLib import parkrunDbLib
 import argparse
 import os
+import math
 
 def getEventHistory(db,parkrunStr,startTs,endTs):
     """ Produce an event history summary """
@@ -25,8 +26,67 @@ def getVolStats(db,parkrunStr,startTs,endTs,thresh,limit,orderBy):
     rows = db.getVolStats(parkrunStr,startTs,endTs,thresh,limit,orderBy)
     for row in rows:
         print row
-    
-        
+
+def calcMeanStDev(tArr,sigTh):
+    """ Calculate the mean and standard deviation of the data in tArr,
+    excluding outliers that are more than sigTh standard deviations from the mean.
+    """
+    dataOk = False
+
+    # we iterate until all the data lies within sigTh
+    while not dataOk:
+        totT = 0
+        nT = 0
+        avT = 0.
+        stDev = 0.
+        # Calculate Mean
+        for t in tArr:
+            #print t
+            totT = totT + t
+            nT = nT + 1
+        avT = totT/nT
+        # calculate standard deviation
+        for t in tArr:
+            stDev = stDev + (t-avT)*(t-avT)
+        stDev = math.sqrt(stDev/(nT-1))
+
+        # Check if all data lies within standard eviation limit sigTh,
+        # and remove any outliers from the data.
+        #print "Checking...."
+        dataOk = True
+        for t in tArr:
+            #print "%f, %f, %f, %f, %f" % (t, avT, stDev, abs(t-avT)/stDev, (sigTh*stDev))
+            if (abs(t-avT)>(sigTh*stDev)):
+                #print "   Removing %f" % t
+                tArr.remove(t)
+                dataOk=False
+    return (nT,avT,stDev)
+
+def getRunnerStats(db,parkrunStr,startTs,endTs,thresh,limit):
+    print "getRunnerStats()"
+    rows = db.getRunnerList(parkrunStr,startTs,endTs,thresh,10000)
+    resultsArr = []
+    for row in rows:
+        #print row
+        if (row[1]=="Unknown"):
+            print "Ignoring the Unknown Runner...."
+        else:
+            runnerId = row[0]
+            runnerHist = db.getRunnerHistory(runnerId,parkrunStr,startTs,endTs)
+            timesArr = []
+            for run in runnerHist:
+                #print run
+                timesArr.append(run[7])
+            (nT,avT,stDevT) = calcMeanStDev(timesArr,3)
+            #print "%s, %d runs, Average Time=%f, stDev=%f" \
+            #    % (row[1],nT,avT,stDevT)
+            resultsArr.append((row[1],nT,avT,stDevT))
+    # Sort into standard deviation order (element 3 in each row)
+    resultsArr.sort(key=lambda x: x[3], reverse=False)
+    print "Sorted Results..."
+    for r in resultsArr[0:limit]:
+        print r
+            
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("command", help="command to execute")
@@ -54,7 +114,7 @@ if __name__ == "__main__":
         dbFname = args.database
     else:
         dbFname = "./parkrun.db"
-    db = parkrunDbLib(dbFname)
+    db = parkrunDbLib(dbFname,Debug=(verbose>2))
 
     if (args.parkrun!=None):
         parkrunStr = args.parkrun
@@ -101,6 +161,8 @@ if __name__ == "__main__":
         getEventResults(db,parkrunStr,eventNo)
     elif (cmdStr=="volstats"):
         getVolStats(db,parkrunStr,startTs,endTs,thresh,limit,orderBy)
+    elif (cmdStr=="runstats"):
+        getRunnerStats(db,parkrunStr,startTs,endTs,thresh,limit)
     else:
         print "ERROR: Command %s not recognised" % cmdStr
 
