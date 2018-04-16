@@ -60,22 +60,18 @@ def importHtmlFile(db,fname):
             finishPos = int(cells[0].contents[0])
             href = cells[1].find("a", href=True)
             if href!=None:
-                print "Prcessing Runner ",href
                 runnerNo = int(href['href'].split('=')[1])
-                runnerName = href.contents[0]
+                runnerName = href.contents[0].encode('ascii','ignore')
                 timeParts = cells[2].contents[0].split(':')
+                print "Processing Runner %s" % runnerName
                 if (len(timeParts)==2):
                     runnerTime = 60*int(timeParts[0])+int(timeParts[1])
                 else:
                     runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
-                #print runnerName,timeParts,runnerTime
                 runnerAgeCat = cells[3].find("a").contents[0]
-                #print cells[3],runnerAgeCat
                 runnerAgeGrade = cells[4].contents[0].split('%')[0]
-                #print cells[4],runnerAgeGrade
                 gender = cells[5].contents[0]
                 genderPos = int(cells[6].contents[0])
-                #print(cells[7])
                 if (len(cells[7].find("a").contents)>0):
                     club = cells[7].find("a").contents[0]
                 else:
@@ -105,17 +101,17 @@ def importHtmlFile(db,fname):
                 # (we won't if it was created as a volunteer)
                 runnerData = db.getRunner(runnerId)
                 if (runnerData[3]==""):
+                    print "Updating Data for Runner %s." % runnerName
                     db.updateRunner(runnerId,runnerNo,runnerName, club, gender)
 
             db.addRun(eventId, runnerId, roleId, runnerTime,
                       str(runnerAgeCat), float(runnerAgeGrade),
                       finishPos,genderPos,note)
+    ###########################################
     # Now extract the names of the volunteers
     volTitleText = re.compile('Thanks to the volunteers')
     volTitle = soup.find("h3",text=volTitleText)
     volParText = volTitle.next_sibling.contents[0].split(':')[1]
-    #print volParText
-    #volparText = volParText.split(':')[1]
     volList = volParText.split(', ')
     for volName in volList:
         runnerNo = db.getRunnerNoFromName(volName)
