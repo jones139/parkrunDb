@@ -1,2 +1,8 @@
 *~
 *#
+html_files/
+html_test/
+*.bak
+import.txt
+parkrun.db
+*.pyc

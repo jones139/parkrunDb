@@ -1,13 +1,29 @@
+README: parkrun_db
+==================
 
+Collect the html files of parkrun results and put them into a folder ./html_files
 
-getPartList.py - scrapes the parkrun website to get a list of participants over several runs (both runners and volunteers) as a json encoded file partlist.json.
+Add any new volunteers that have not run before into iddb.json to assign them a barcode number.
 
-partList2iddb.py takes partlist.json and creates a simpler json file of {id,name} records to use as a lookup databse.   Edit this manually to handle volunteers
-who do not run, as they will be unknown in the db.
+*** NOTE - this will erase the entire database!!!! ****
+Initialise the database with:
+        sqlite3 parkrun.db <createdb.sqlite
 
-matchParts.py processes partlist.json and uses the id database iddb.json to
-set the id of voluneers - this means that every participant in the file should
-now have a name and id.
+Import the data files into the database with:
+	time ./importHtml.py --iddb=iddb.json ./html_files/ >import.txt
 
-getPartStats.py - calculates statistics for each participant, and outputs as
-partstats.json
+It should complete without errors.
+Check for unidentified volunteers:
+      grep ERROR import.txt
+
+If there are errors, add entries into iddb.json, re-initialise the database and repeat the import above.
+
+Produce some statistics with:
+	./parkrunStats.py -h
+shows the command line parameters.  Valid commands are:
+      'history' - produce a version of the parkrun event history from the database,
+      'results' - produce a version of the parkrun results table from the database,
+      'volstats' - calculate statistics related to volunteering (it also does time on feet).
+      'runstats' - calculate statistics on runs - in particular the standard deviation of run time (with outliers removed) used for the 'consistency' award.
+
+The output is not pretty - just lists of numbers which you have to turn into something presentable, sorry!
