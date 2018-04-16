@@ -398,15 +398,11 @@ class parkrunDbLib:
             )
 
             # calculate number of volunteerings for each runner
-            # for volunteers timeOnFeet is the time of the slowest
-            # runner in the parkrun
+            # set time on feet to zero for volunteers, because otherwise
+            # we were getting the top volunteers winning time on feet too.
             volsSqlStr = (
                 " select name, runnerNo, count(runs.id) as nv, "
-                " sum((select max(runTime) from runs "
-                "      where runs.eventId in "
-                "        ("+selEventsSql+") "
-                "      and runs.roleId = 0 "
-                "    )) as tv"
+                " 0 as tv"
                 "  from runners, runs "
                 "    where runs.eventId in "
                 "      ("+selEventsSql+") "
