@@ -1,8 +1,11 @@
 *~
 *#
 html_files/
+html_import/
 html_test/
 *.bak
 import.txt
 parkrun.db
+parkrun.db-journal
 *.pyc
+iddb.json

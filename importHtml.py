@@ -69,7 +69,15 @@ def importHtmlFile(db,fname):
                 else:
                     runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
                 runnerAgeCat = cells[3].find("a").contents[0]
-                runnerAgeGrade = cells[4].contents[0].split('%')[0]
+                # Sometimes age grade is blank so need to check
+                if (len(cells[4])>0):
+                    runnerAgeGradeStr = cells[4].contents[0]
+                    if '%' in runnerAgeGradeStr:
+                        runnerAgeGrade = runnerAgeGradeStr.split('%')[0]
+                    else:
+                        runnerAgeGrade = 0
+                else:
+                    runnerAgeGrade = 0
                 gender = cells[5].contents[0]
                 genderPos = int(cells[6].contents[0])
                 if (len(cells[7].find("a").contents)>0):
