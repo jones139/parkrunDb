@@ -333,6 +333,14 @@ class parkrunDbLib:
                       "(select count(id) from runs "
                       "    where runs.eventId=events.Id and runs.roleId=1) "
                       "    as volunteers "
+                      ", "
+                      "(select count(id) from runs "
+                      "    where runs.eventId=events.Id and runs.note='New PB!') "
+                      "    as PBcount "
+                      ", "
+                      "(select count(id) from runs "
+                      "    where runs.eventId=events.Id and runs.note='First Timer!') "
+                      "    as FirstTimecount "
                       "from events "
                       "where parkrunId = ? "
                       " and dateVal>=? and dateVal<=? "
@@ -343,6 +351,52 @@ class parkrunDbLib:
             rows = cur.fetchall()
             return rows
 
+    def getEventAttendanceSummary(self,parkrunStr,startTs,endTs):
+        """ returns a cursor pointing to the event attendance summary
+        (annual number of runs)
+        between timestamps startTs and endTs
+        """
+        prId = self.getParkrunId(parkrunStr)
+        if (prId==-1):
+            return None
+        else:
+            #strftime('%d-%m-%Y', (date/1000)) as_string
+            sqlStr = (
+                "select yearStr, sum(runners), sum(volunteers), "
+                "sum(PBcount), sum(FirstTimeCount) from "
+                "(select eventNo, id, dateVal, "
+                "strftime('%Y',datetime(dateVal, 'unixepoch',"
+                "'localtime')) as yearStr, "
+                "strftime('%d-%m-%Y',datetime(dateVal, 'unixepoch',"
+                "'localtime')) as dateStr, "
+                "(select count(id) from runs "
+                "    where runs.eventId=events.Id and runs.roleId=0) "
+                "    as runners, "
+                "(select count(id) from runs "
+                "    where runs.eventId=events.Id and runs.roleId=1) "
+                "    as volunteers "
+                ", "
+                "(select count(id) from runs "
+                "    where runs.eventId=events.Id and runs.note='New PB!') "
+                "    as PBcount "
+                ", "
+                "(select count(id) from runs "
+                "    where runs.eventId=events.Id and runs.note='First Timer!') "
+                "    as FirstTimecount "
+                "from events "
+                "where parkrunId = ? "
+                " and dateVal>=? and dateVal<=? "
+                "order by dateVal desc) "
+                "group by yearStr"
+            )
+
+            sqlParams = (prId,startTs,endTs)
+            print("sqlStr=%s" % sqlStr)
+            cur = self.conn.execute(sqlStr,sqlParams)
+            rows = cur.fetchall()
+            return rows
+
+        
     def getEventResults(self,parkrunStr,eventNo):
         """ returns set of rows containing results for the given parkrun event.
         """

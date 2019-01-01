@@ -5,11 +5,249 @@ from parkrunDbLib import parkrunDbLib
 import argparse
 import os
 import math
+import matplotlib.pyplot as plt
 
+def getAnnualSummary(db,parkrunStr,startTs,endTs):
+    """ Produce an HTML summary of the given period.
+    """
+    print("getAnnualSummary - startTs=%s, endTs=%s" % (startTs, endTs))
+    of = open("out.html",'w')
+    if (of==None):
+        print("ERROR OPENING output file")
+        exit(-1)
+
+    of.write("<h1>Annual Summary for %s Parkrun</h1>\n" % parkrunStr)
+
+    of.write("<h2>Annual Attendance</h2>\n")
+    of.write("<table>\n")
+    of.write("<tr>")
+    of.write("<th>Year</th>")
+    of.write("<th>Number of Runs</th>")
+    of.write("<th>Number of Volunteers</th>")
+    of.write("<th>Number of PBs</th>")
+    of.write("<th>Number of First Timers</th>")
+    of.write("</tr>\n")
+
+    rows = db.getEventAttendanceSummary(parkrunStr,
+                                        db.dateStr2ts("01/01/2000"),
+                                        endTs)
+    graphX = []
+    graphY = []
+    for row in rows:
+        of.write("<tr>")
+        of.write("<td>%s</td>" % row[0])
+        of.write("<td>%s</td>" % row[1])
+        of.write("<td>%s</td>" % row[2])
+        of.write("<td>%s</td>" % row[3])
+        of.write("<td>%s</td>" % row[4])
+        of.write("</tr>\n")
+        graphX.append(row[0])
+        graphY.append(row[1])
+    of.write("</table>")
+    # Make annual attendance graph
+    fig, ax = plt.subplots()
+    bar1 = ax.bar(graphX,graphY)
+    ax.set_xlabel('Year')
+    ax.set_ylabel('Runs')
+    plt.title('Annual Attendance')
+    plt.savefig('annual_attendance.png')
+
+    of.write('<img src="annual_attendance.png" '\
+             'alt="Annual Attendance Graph" '\
+             'style="width:500px;height:300px;">\n')
+    
+    
+    of.write("<h2>Weekly Statistics</h2>\n")
+    of.write('<img src="weekly_attendance.png" '\
+             'alt="Weekly Attendance Graph" '\
+             'style="width:500px;height:300px;">\n')
+    rows = db.getEventHistory(parkrunStr,startTs,endTs)
+    graphX = []
+    graphY = []
+    for row in rows:
+        graphX.append(row[0])
+        graphY.append(row[4])
+        #print(row)
+    # Make graph
+    fig, ax = plt.subplots()
+    bar1 = ax.bar(graphX,graphY)
+    ax.set_xlabel('Event Number')
+    ax.set_ylabel('Runs')
+    plt.title('Number of Participants at Each Parkrun')
+    plt.savefig('weekly_attendance.png')
+
+    # Weekly PBs Graph
+    #of.write("<h2>Weekly PBs</h2>\n")
+    of.write('<img src="weekly_PBs.png" '\
+             'alt="Weekly PBs Graph" '\
+             'style="width:500px;height:300px;">\n')
+    rows = db.getEventHistory(parkrunStr,startTs,endTs)
+    graphX = []
+    graphY = []
+    for row in rows:
+        graphX.append(row[0])
+        graphY.append(row[6])
+        #print(row)
+    # Make graph
+    fig, ax = plt.subplots()
+    bar1 = ax.bar(graphX,graphY)
+    ax.set_xlabel('Event Number')
+    ax.set_ylabel('PBs')
+    plt.title('Number of PBs at Each Parkrun')
+    plt.savefig('weekly_PBs.png')
+
+    # Weekly Firs Timers Graph
+    #of.write("<h2>Weekly First Timers</h2>\n")
+    of.write('<img src="weekly_First_Timers.png" '\
+             'alt="Weekly First Timers Graph" '\
+             'style="width:500px;height:300px;">\n')
+    rows = db.getEventHistory(parkrunStr,startTs,endTs)
+    graphX = []
+    graphY = []
+    for row in rows:
+        graphX.append(row[0])
+        graphY.append(row[7])
+        #print(row)
+    # Make graph
+    fig, ax = plt.subplots()
+    bar1 = ax.bar(graphX,graphY)
+    ax.set_xlabel('Event Number')
+    ax.set_ylabel('First Timers')
+    plt.title('Number of First Timers at Each Parkrun')
+    plt.savefig('weekly_First_Timers.png')
+
+
+    ###############################################
+    of.write("<h2>Top Participants</h2>\n")
+
+    of.write("<h3>Keenest</h3>\n")
+    of.write("<table>\n")
+    of.write("<tr>")
+    of.write("<th>Name</th>")
+    of.write("<th>Number of Runs</th>")
+    of.write("<th>Number of Volunteers</th>")
+    of.write("<th>Total</th>")
+    of.write("</tr>\n")
+
+    # Sort by total number of activities (orderBy=1)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,6,1)
+
+    print("Processing Keenest....")
+    for row in rows:
+        if (row[1]!=0):   # Ignore 'Unknown'
+            print row
+            of.write("<tr>")
+            of.write("<td>%s</td>" % row[0])
+            of.write("<td>%s</td>" % row[2])
+            of.write("<td>%s</td>" % row[3])
+            of.write("<td>%s</td>" % row[4])
+            of.write("</tr>\n")
+    of.write("</table>")
+
+
+
+    of.write("<h3>Most Runs</h3>\n")
+    of.write("<table>\n")
+    of.write("<tr>")
+    of.write("<th>Name</th>")
+    of.write("<th>Number of Runs</th>")
+    of.write("<th>Number of Volunteers</th>")
+    of.write("</tr>\n")
+
+    # Sort by number of runs (orderBy=2)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,6,2)
+
+    for row in rows:
+        if (row[1]!=0):   # Ignore 'Unknown'
+            #print row
+            of.write("<tr>")
+            of.write("<td>%s</td>" % row[0])
+            of.write("<td>%s</td>" % row[2])
+            of.write("<td>%s</td>" % row[3])
+            of.write("</tr>\n")
+    of.write("</table>")
+
+    of.write("<h3>Time on Feet</h3>\n")
+    of.write("<table>\n")
+    of.write("<tr>")
+    of.write("<th>Name</th>")
+    of.write("<th>Number of Runs</th>")
+    of.write("<th>Number of Volunteers</th>")
+    of.write("<th>Time on Feet (hours)</th>")
+    of.write("</tr>\n")
+
+    # Sort by time on feet (orderBy=4)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,6,4)
+
+    for row in rows:
+        if (row[1]!=0):   # Ignore 'Unknown'
+            #print row
+            of.write("<tr>")
+            of.write("<td>%s</td>" % row[0])
+            of.write("<td>%s</td>" % row[2])
+            of.write("<td>%s</td>" % row[3])
+            timeonfeetSec = float(row[7])
+            timeonfeetHour = timeonfeetSec / 3600.
+            of.write("<td>%2.1f</td>" % timeonfeetHour)
+            of.write("</tr>\n")
+    of.write("</table>")
+
+    of.write("<h3>Consistency</h3>\n")
+    of.write("<table>\n")
+    of.write("<tr>")
+    of.write("<th>Name</th>")
+    of.write("<th>Run Time SD (sec)</th>")
+    of.write("</tr>\n")
+
+    rows = getRunnerStats(db,parkrunStr,startTs,endTs,10,5)
+    
+    for row in rows:
+        if (row[1]!=0):   # Ignore 'Unknown'
+            print row
+            of.write("<tr>")
+            of.write("<td>%s</td>" % row[0])
+            of.write("<td>%s</td>" % row[3])
+            of.write("</tr>\n")
+    of.write("</table>")
+
+
+    
+    of.write("<h3>Top Volunteers</h3>\n")
+    of.write("<table>\n")
+    of.write("<tr>")
+    of.write("<th>Name</th>")
+    of.write("<th>Number of Runs</th>")
+    of.write("<th>Number of Volunteers</th>")
+    of.write("</tr>\n")
+
+    # Sort by number of volunteers (orderBy=3)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,5,3)
+
+    for row in rows:
+        if (row[1]!=0):   # Ignore 'Unknown'
+            #print row
+            of.write("<tr>")
+            of.write("<td>%s</td>" % row[0])
+            of.write("<td>%s</td>" % row[2])
+            of.write("<td>%s</td>" % row[3])
+            of.write("</tr>\n")
+    of.write("</table>")
+
+    
+    of.close()
+    print("*****************")
+    print("*     DONE!     *")
+    print("*****************")
+
+    
 def getEventHistory(db,parkrunStr,startTs,endTs):
     """ Produce an event history summary """
+    rows = db.getEventAttendanceSummary(parkrunStr,startTs,endTs)
+    print("Annual Summary")
+    for row in rows:
+        print row
     rows = db.getEventHistory(parkrunStr,startTs,endTs)
-
+    print("All Events")
     for row in rows:
         print row
 
@@ -48,7 +286,10 @@ def calcMeanStDev(tArr,sigTh):
         # calculate standard deviation
         for t in tArr:
             stDev = stDev + (t-avT)*(t-avT)
-        stDev = math.sqrt(stDev/(nT-1))
+        if (nT>1):
+            stDev = math.sqrt(stDev/(nT-1))
+        else:
+            stDev = 0
 
         # Check if all data lies within standard eviation limit sigTh,
         # and remove any outliers from the data.
@@ -83,9 +324,10 @@ def getRunnerStats(db,parkrunStr,startTs,endTs,thresh,limit):
             resultsArr.append((row[1],nT,avT,stDevT))
     # Sort into standard deviation order (element 3 in each row)
     resultsArr.sort(key=lambda x: x[3], reverse=False)
-    print "Sorted Results..."
-    for r in resultsArr[0:limit]:
-        print r
+    #print "Sorted Results..."
+    #for r in resultsArr[0:limit]:
+    #    print r
+    return resultsArr[0:limit]
             
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
@@ -162,7 +404,11 @@ if __name__ == "__main__":
     elif (cmdStr=="volstats"):
         getVolStats(db,parkrunStr,startTs,endTs,thresh,limit,orderBy)
     elif (cmdStr=="runstats"):
-        getRunnerStats(db,parkrunStr,startTs,endTs,thresh,limit)
+        resultsArr = getRunnerStats(db,parkrunStr,startTs,endTs,thresh,limit)
+        for r in resultsArr:
+            print r
+    elif (cmdStr=="annual"):
+        getAnnualSummary(db,parkrunStr,startTs,endTs)
     else:
         print "ERROR: Command %s not recognised" % cmdStr
 
