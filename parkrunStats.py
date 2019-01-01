@@ -6,12 +6,32 @@ import argparse
 import os
 import math
 import matplotlib.pyplot as plt
+import datetime
+import time
+import errno
+import shutil
 
 def getAnnualSummary(db,parkrunStr,startTs,endTs):
     """ Produce an HTML summary of the given period.
     """
     print("getAnnualSummary - startTs=%s, endTs=%s" % (startTs, endTs))
-    of = open("out.html",'w')
+    dirName = "%s_%s" % (parkrunStr,
+                         datetime.datetime.fromtimestamp(startTs).strftime('%Y'))
+    outFname = "index.html"
+    try:
+        os.makedirs(dirName)
+    except OSError as exc:  
+        if exc.errno == errno.EEXIST and os.path.isdir(dirName):
+            pass
+        else:
+            raise
+    # copy the CSS style file into the output directory.
+    scriptDir = os.path.dirname(os.path.realpath(__file__))
+    shutil.copyfile(os.path.join(scriptDir,"styles.css"), \
+                    os.path.join(dirName,"styles.css"))
+
+    # Create the output html file.
+    of = open(os.path.join(dirName,outFname),'w')
     if (of==None):
         print("ERROR OPENING output file")
         exit(-1)
@@ -58,14 +78,15 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     ax.set_xlabel('Year')
     ax.set_ylabel('Runs')
     plt.title('Annual Attendance')
-    plt.savefig('annual_attendance.png')
+    plt.savefig(os.path.join(dirName,'annual_attendance.png'))
 
     of.write('<img src="annual_attendance.png" '\
              'alt="Annual Attendance Graph" '\
              'style="width:500px;height:300px;">\n')
     
     
-    of.write("<h2>Weekly Statistics</h2>\n")
+    of.write("<h2>Statistics for Events between %s and %s</h2>\n" \
+             % (db.ts2dateStr(startTs), db.ts2dateStr(endTs)))
     of.write('<img src="weekly_attendance.png" '\
              'alt="Weekly Attendance Graph" '\
              'style="width:500px;height:300px;">\n')
@@ -82,7 +103,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     ax.set_xlabel('Event Number')
     ax.set_ylabel('Runs')
     plt.title('Number of Participants at Each Parkrun')
-    plt.savefig('weekly_attendance.png')
+    plt.savefig(os.path.join(dirName,'weekly_attendance.png'))
 
     # Weekly PBs Graph
     #of.write("<h2>Weekly PBs</h2>\n")
@@ -102,7 +123,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     ax.set_xlabel('Event Number')
     ax.set_ylabel('PBs')
     plt.title('Number of PBs at Each Parkrun')
-    plt.savefig('weekly_PBs.png')
+    plt.savefig(os.path.join(dirName,'weekly_PBs.png'))
 
     # Weekly Firs Timers Graph
     #of.write("<h2>Weekly First Timers</h2>\n")
@@ -122,7 +143,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     ax.set_xlabel('Event Number')
     ax.set_ylabel('First Timers')
     plt.title('Number of First Timers at Each Parkrun')
-    plt.savefig('weekly_First_Timers.png')
+    plt.savefig(os.path.join(dirName,'weekly_First_Timers.png'))
 
 
     ###############################################
@@ -179,8 +200,6 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Name</th>")
-    of.write("<th>Number of Runs</th>")
-    of.write("<th>Number of Volunteers</th>")
     of.write("<th>Time on Feet (hours)</th>")
     of.write("</tr>\n")
 
@@ -192,8 +211,6 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
             #print row
             of.write("<tr>")
             of.write("<td>%s</td>" % row[0])
-            of.write("<td>%s</td>" % row[2])
-            of.write("<td>%s</td>" % row[3])
             timeonfeetSec = float(row[7])
             timeonfeetHour = timeonfeetSec / 3600.
             of.write("<td>%2.1f</td>" % timeonfeetHour)
@@ -245,6 +262,9 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("</html>\n")
     
     of.close()
+    print()
+    print("Output File %s is stored in directory %s" % \
+          (outFname, dirName))
     print("*****************")
     print("*     DONE!     *")
     print("*****************")
