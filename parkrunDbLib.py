@@ -362,7 +362,7 @@ class parkrunDbLib:
         else:
             #strftime('%d-%m-%Y', (date/1000)) as_string
             sqlStr = (
-                "select yearStr, sum(runners), sum(volunteers), "
+                "select yearStr, count(eventNo), sum(runners), sum(volunteers), "
                 "sum(PBcount), sum(FirstTimeCount) from "
                 "(select eventNo, id, dateVal, "
                 "strftime('%Y',datetime(dateVal, 'unixepoch',"

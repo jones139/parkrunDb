@@ -16,12 +16,19 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
         print("ERROR OPENING output file")
         exit(-1)
 
+    of.write("<html>\n")
+    of.write("<head>\n")
+    of.write("<title>Annual Summary for %s Parkrun</title>\n" % parkrunStr)
+    of.write("<link rel='stylesheet' href='styles.css'>")
+    of.write("</head>\n")
+    of.write("<body>\n")
     of.write("<h1>Annual Summary for %s Parkrun</h1>\n" % parkrunStr)
 
     of.write("<h2>Annual Attendance</h2>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Year</th>")
+    of.write("<th>Number of Events</th>")
     of.write("<th>Number of Runs</th>")
     of.write("<th>Number of Volunteers</th>")
     of.write("<th>Number of PBs</th>")
@@ -40,9 +47,10 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
         of.write("<td>%s</td>" % row[2])
         of.write("<td>%s</td>" % row[3])
         of.write("<td>%s</td>" % row[4])
+        of.write("<td>%s</td>" % row[5])
         of.write("</tr>\n")
         graphX.append(row[0])
-        graphY.append(row[1])
+        graphY.append(row[2])
     of.write("</table>")
     # Make annual attendance graph
     fig, ax = plt.subplots()
@@ -206,7 +214,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
             print row
             of.write("<tr>")
             of.write("<td>%s</td>" % row[0])
-            of.write("<td>%s</td>" % row[3])
+            of.write("<td>%4.1f</td>" % row[3])
             of.write("</tr>\n")
     of.write("</table>")
 
@@ -233,6 +241,8 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
             of.write("</tr>\n")
     of.write("</table>")
 
+    of.write("</body>\n")
+    of.write("</html>\n")
     
     of.close()
     print("*****************")
