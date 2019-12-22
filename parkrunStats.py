@@ -10,6 +10,7 @@ import datetime
 import time
 import errno
 import shutil
+import numpy as np
 
 def getAnnualSummary(db,parkrunStr,startTs,endTs):
     """ Produce an HTML summary of the given period.
@@ -269,6 +270,35 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     print("*     DONE!     *")
     print("*****************")
 
+def getTimeHistogram(db,parkrunStr,startTs,endTs):
+    eventRows = db.getEventHistory(parkrunStr,startTs,endTs)
+
+    runTimes = []
+    for eventRow in eventRows:
+        eventNo = eventRow[0]
+        runRows = db.getEventResults(parkrunStr,eventNo)
+        for runRow in runRows:
+            # print(runRow)
+            if (runRow[0]>0):
+                runTimes.append(runRow[2]/60.)
+    #print(runTimes)
+    runTimesArr = np.array(runTimes)
+    print("Min Time  is %8.0f min" % np.min(runTimesArr))
+    print("Mean Time  is %8.0f min" % np.mean(runTimesArr))
+    print("StDev Time is %8.0f min" % np.std(runTimesArr))
+    hist = np.histogram(runTimesArr,60,(1,60))
+    graphX = range(1,61)
+    print(len(hist[0]),len(graphX))
+    print(graphX)
+    print(hist[0])
+    fig, ax = plt.subplots()
+    bar1 = ax.bar(graphX,hist[0])
+    ax.set_xlabel('Time(min)')
+    ax.set_ylabel('Runs')
+    plt.title('Finish Time Distribution')
+    plt.savefig(os.path.join('.','finish_time_hist.png'))
+    print("Histogram stored as finish_time_hist.png")
+
     
 def getEventHistory(db,parkrunStr,startTs,endTs):
     """ Produce an event history summary """
@@ -431,6 +461,8 @@ if __name__ == "__main__":
         getEventHistory(db,parkrunStr,startTs,endTs)
     elif (cmdStr=="results"):
         getEventResults(db,parkrunStr,eventNo)
+    elif (cmdStr=="timeHistogram"):
+        getTimeHistogram(db,parkrunStr,startTs,endTs)
     elif (cmdStr=="volstats"):
         getVolStats(db,parkrunStr,startTs,endTs,thresh,limit,orderBy)
     elif (cmdStr=="runstats"):

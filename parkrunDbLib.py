@@ -402,8 +402,8 @@ class parkrunDbLib:
         """
         prId = self.getParkrunId(parkrunStr)
         eventId = self.getEventIdFromEventNo(prId,eventNo)
-        print ("getEventResults - parkrunStr=%s (id=%d), eventNo=%d (id=%d)"
-               % (parkrunStr,prId, eventNo, eventId))
+        # print ("getEventResults - parkrunStr=%s (id=%d), eventNo=%d (id=%d)"
+        #       % (parkrunStr,prId, eventNo, eventId))
         if (prId==-1 | eventId==-1):
             return None
         else:
