@@ -16,7 +16,7 @@ import urllib2
 from bs4 import BeautifulSoup
 import re
 import json
-
+import random
 
 def getEventsList(eventName):
     baseUrl = "http://www.parkrun.org.uk/%s/results/eventhistory/"
@@ -127,7 +127,9 @@ for eventNo in range(eventMin,eventMax+1):
         f = open(fname,'w')
         f.write(h)
         f.close
-        time.sleep(delay)
+        delayTime = delay * random.uniform(0.9, 1.1)
+        print("Sleeping for %f seconds" % delayTime)
+        time.sleep(delayTime)
     else:
         print "Event No %d not found" % eventNo
 

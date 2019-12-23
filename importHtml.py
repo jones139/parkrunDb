@@ -36,10 +36,14 @@ def importHtmlFile(db,fname):
     soup = BeautifulSoup(htmlStr, 'html.parser')
 
     # Get event details
-    print soup.find("h2").contents[0]
-    prName  = soup.find("h2").contents[0].split('-')[0].split()[0]
-    eventNo = soup.find("h2").contents[0].split('-')[0].split()[3]
-    dateStr = soup.find("h2").contents[0].split('-')[1].split()[0]
+    #print soup.find("h1").contents[0]
+    prName  = soup.find("h1").contents[0].split('-')[0].split()[0]
+    #print prName
+    #print soup.find("h3").contents
+    #dateStr = soup.find("h3").contents[0].split('-')[1].split()[0]
+    dateStr = soup.find("h3").contents[0]
+    eventNoStr = soup.find("h3").contents[2].contents[0]
+    eventNo = int(eventNoStr.strip('#'))
     print prName, eventNo, dateStr
 
     dateTs = db.dateStr2ts(dateStr)
@@ -53,83 +57,88 @@ def importHtmlFile(db,fname):
         eventId = db.addEvent(eventNo, prId, dateTs)
 
     print "eventId=%d" % eventId
-    resultsTable = soup.find( "table", {"id":"results"})
-    for row in resultsTable.findAll("tr"):
-        cells = row.findAll("td")
-        if len(cells)>0:
-            finishPos = int(cells[0].contents[0])
-            href = cells[1].find("a", href=True)
-            if href!=None:
-                runnerNo = int(href['href'].split('=')[1])
-                runnerName = href.contents[0].encode('ascii','ignore')
-                timeParts = cells[2].contents[0].split(':')
-                print "Processing Runner %s" % runnerName
-                if (len(timeParts)==2):
-                    runnerTime = 60*int(timeParts[0])+int(timeParts[1])
-                else:
-                    runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
-                runnerAgeCat = cells[3].find("a").contents[0]
-                # Sometimes age grade is blank so need to check
-                if (len(cells[4])>0):
-                    runnerAgeGradeStr = cells[4].contents[0]
-                    if '%' in runnerAgeGradeStr:
-                        runnerAgeGrade = runnerAgeGradeStr.split('%')[0]
-                    else:
-                        runnerAgeGrade = 0
-                else:
-                    runnerAgeGrade = 0
-                gender = cells[5].contents[0]
-                genderPos = int(cells[6].contents[0])
-                if (len(cells[7].find("a").contents)>0):
-                    club = cells[7].find("a").contents[0]
-                else:
-                    club=''
-                note = cells[8].contents[0]
-                nRuns = int(cells[9].contents[0])
-            else:
-                print "Handling unknown runner"
-                # Handle unknown runners
-                runnerNo = 0
-                runnerName = "Unknown"
-                club=""
-                gender=""
-                genderPos= 9999
-                runnerTime= 9999
-                runnerAgeCat=""
-                runnerAgeGrade = 0.0
-                note=""
-            roleId = 0  # 0 = run, 1 = volunteer
-            runnerId = db.getRunnerId(runnerNo)
-            if (runnerId==-1):
-                print "No Runner found in database with Barcode ID %d - adding him/her." \
-                    % (runnerNo)
-                runnerId = db.addRunner(runnerNo, runnerName, club,gender)
-            else:
-                # Check if we have complete runner data (check gender set)
-                # (we won't if it was created as a volunteer)
-                runnerData = db.getRunner(runnerId)
-                if (runnerData[3]==""):
-                    print "Updating Data for Runner %s." % runnerName
-                    db.updateRunner(runnerId,runnerNo,runnerName, club, gender)
+    resultsTable = soup.find( "table", {"class":"Results-table"})
 
-            db.addRun(eventId, runnerId, roleId, runnerTime,
-                      str(runnerAgeCat), float(runnerAgeGrade),
-                      finishPos,genderPos,note)
+    for row in resultsTable.findAll("tr", {"class":"Results-table-row"}):
+        #print(row['data-name'])
+        runnerName = row['data-name']
+        finishPos = int(row['data-position'])
+        if (runnerName != "Unknown"):
+            runnerAgeCat = row['data-agegroup']
+            runnerAgeGrade = row['data-agegrade']
+            if (runnerAgeGrade == ""):
+                runnerAgeGrade = "0"
+            gender = row['data-gender']
+            note = row['data-achievement']
+            nRuns = row['data-runs']   
+            club = row['data-club']
+
+
+            # extract the barcode no (runnerNo) from the link in the table.
+            href = row.find("td",{"class":"Results-table-td--name"}).find("a", href=True)
+            runnerNo = int(href['href'].split('=')[1])
+            timeParts = row.find("td",{"class":"Results-table-td--time"}).contents[0].contents[0].split(":")
+            if (len(timeParts)==2):
+                runnerTime = 60*int(timeParts[0])+int(timeParts[1])
+            else:
+                runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
+            genderPos = row.find("td",{"class":"Results-table-td--gender"}).find("div",{"class":"detailed"}).contents[0].strip()
+
+            clubRowStr = row \
+                         .find("td",{"class":"Results-table-td--club"})
+            #print(clubRowStr)
+            clubDiv = clubRowStr.find("div",{"class":"compact"})
+            if (clubDiv is not None):
+                clubStr = clubDiv.find("a",href=True)
+                clubNo = clubStr['href'].split('=')[1]
+            else:
+                clubNo = -1
+
+        else:
+            print("Handling unknown runner")
+            # Handle unknown runners
+            runnerNo = 0
+            runnerName = "Unknown"
+            nRuns = 0
+            club=""
+            clubNo=9999
+            gender=""
+            genderPos= 9999
+            timeParts="--:--"
+            runnerTime= 9999
+            runnerAgeCat=""
+            runnerAgeGrade = 0.0
+            note=""
+            
+        # print(runnerName, finishPos,runnerNo, timeParts, runnerTime, runnerAgeCat, runnerAgeGrade, gender, genderPos, club, clubNo, note, nRuns)
+        
+        roleId = 0  # 0 = run, 1 = volunteer
+        runnerId = db.getRunnerId(runnerNo)
+        if (runnerId==-1):
+            print "No Runner found in database with Barcode ID %d - adding %s." \
+                % (runnerNo, runnerName)
+            runnerId = db.addRunner(runnerNo, runnerName, club,gender)
+        else:
+            # Check if we have complete runner data (check gender set)
+            # (we won't if it was created as a volunteer)
+            runnerData = db.getRunner(runnerId)
+            if (runnerData[3]==""):
+                #print "Updating Data for Runner %s." % runnerName
+                db.updateRunner(runnerId,runnerNo,runnerName, club, gender)
+
+        db.addRun(eventId, runnerId, roleId, runnerTime,
+                  str(runnerAgeCat), float(runnerAgeGrade),
+                  finishPos,genderPos,note)
     ###########################################
     # Now extract the names of the volunteers
     volTitleText = re.compile('Thanks to the volunteers')
-    volTitle = soup.find("h3",text=volTitleText)
-    volParText = volTitle.next_sibling.contents[0].split(':')[1]
-    volList = volParText.split(', ')
-    for volName in volList:
-        runnerNo = db.getRunnerNoFromName(volName)
-        if (runnerNo==-1):
-            print ("**** ERROR:  Failed to Find Volunteer %s in Database ****" % volName)
-            print ("    Please add entry to external id database and re-import")
-        else:
-            print ("Found Runner %s - barcode = A%s." % (volName,runnerNo))
-        # this runnerNo might have come from the external database, so check the
-        # main DB, and add the volunteer if necessary.
+    volPar = soup.find("h3",text=volTitleText).nextSibling
+    volLinks = volPar.findAll("a")
+    #print(volLinks)
+    for volLink in volLinks:
+        volName = volLink.contents[0]
+        runnerNo = int(volLink['href'].split('=')[1])
+        #print(volName,runnerNo)
         runnerId = db.getRunnerId(runnerNo)
         if (runnerId==-1):
             print "No Runner found in database with Barcode No %d - adding him/her." \
@@ -149,7 +158,6 @@ def importHtmlFile(db,fname):
 ap = argparse.ArgumentParser()
 ap.add_argument("inDir", help="Directory containing the files to import (defaults to ./html_files")
 ap.add_argument("-db", "--database", help="Filename of Database to use (Defaults to ./parkrun.db")
-ap.add_argument("-id", "--iddb", help="Filename of external id lookup database (Defaults to None")
 
 ap.add_argument("-v", "--verbose",
                 help="produce verbose output for debugging",
@@ -167,18 +175,13 @@ if (args.database!=None):
 else:
     dbFname = "./parkrun.db"
 
-if (args.iddb!=None):
-    iddb = args.iddb
-else:
-    iddb = None
-
 
 if (os.path.exists(inDir)):
     if (os.path.isdir(inDir)):
         if (verbose):
             print "Input Directory %s exists - OK" % inDir
         if (os.path.exists(dbFname)):
-            db = parkrunDbLib(dbFname,iddb)
+            db = parkrunDbLib(dbFname, Debug=False)
             print "Opened Database"
             for root, dirs, files in os.walk(inDir):
                 for file in files:
