@@ -12,7 +12,7 @@ import errno
 import shutil
 import numpy as np
 
-def getAnnualSummary(db,parkrunStr,startTs,endTs):
+def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     """ Produce an HTML summary of the given period.
     """
     print("getAnnualSummary - startTs=%s, endTs=%s" % (startTs, endTs))
@@ -88,9 +88,6 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     
     of.write("<h2>Statistics for Events between %s and %s</h2>\n" \
              % (db.ts2dateStr(startTs), db.ts2dateStr(endTs)))
-    of.write('<img src="weekly_attendance.png" '\
-             'alt="Weekly Attendance Graph" '\
-             'style="width:500px;height:300px;">\n')
     rows = db.getEventHistory(parkrunStr,startTs,endTs)
     graphX = []
     graphY = []
@@ -105,6 +102,15 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     ax.set_ylabel('Runs')
     plt.title('Number of Participants at Each Parkrun')
     plt.savefig(os.path.join(dirName,'weekly_attendance.png'))
+
+    maxAttendance = max(graphY)
+    minAttendance = min(graphY)
+    of.write("Max Attendance = %d, Min Attendance = %d <br>"
+             % (maxAttendance,
+                minAttendance))
+    of.write('<img src="weekly_attendance.png" '\
+             'alt="Weekly Attendance Graph" '\
+             'style="width:500px;height:300px;">\n')
 
     # Weekly PBs Graph
     #of.write("<h2>Weekly PBs</h2>\n")
@@ -126,7 +132,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     plt.title('Number of PBs at Each Parkrun')
     plt.savefig(os.path.join(dirName,'weekly_PBs.png'))
 
-    # Weekly Firs Timers Graph
+    # Weekly First Timers Graph
     #of.write("<h2>Weekly First Timers</h2>\n")
     of.write('<img src="weekly_First_Timers.png" '\
              'alt="Weekly First Timers Graph" '\
@@ -151,6 +157,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("<h2>Top Participants</h2>\n")
 
     of.write("<h3>Keenest</h3>\n")
+    of.write("<p>Total Participation (run + volunteer). Note: Running and volunteering on the same day counts.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Name</th>")
@@ -160,7 +167,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("</tr>\n")
 
     # Sort by total number of activities (orderBy=1)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,6,1)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,1)
 
     print("Processing Keenest....")
     for row in rows:
@@ -177,6 +184,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
 
 
     of.write("<h3>Most Runs</h3>\n")
+    of.write("<p>Total Number of Runs in the period</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Name</th>")
@@ -185,7 +193,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("</tr>\n")
 
     # Sort by number of runs (orderBy=2)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,6,2)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,2)
 
     for row in rows:
         if (row[1]!=0):   # Ignore 'Unknown'
@@ -198,6 +206,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("</table>")
 
     of.write("<h3>Time on Feet</h3>\n")
+    of.write("<p>Total time spent running in the period.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Name</th>")
@@ -205,7 +214,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("</tr>\n")
 
     # Sort by time on feet (orderBy=4)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,6,4)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,4)
 
     for row in rows:
         if (row[1]!=0):   # Ignore 'Unknown'
@@ -219,13 +228,14 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("</table>")
 
     of.write("<h3>Consistency</h3>\n")
+    of.write("<p>Smallest variation (standard deviation) in run times.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Name</th>")
     of.write("<th>Run Time SD (sec)</th>")
     of.write("</tr>\n")
 
-    rows = getRunnerStats(db,parkrunStr,startTs,endTs,10,5)
+    rows = getRunnerStats(db,parkrunStr,startTs,endTs,10,tableLen)
     
     for row in rows:
         if (row[1]!=0):   # Ignore 'Unknown'
@@ -239,6 +249,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
 
     
     of.write("<h3>Top Volunteers</h3>\n")
+    of.write("<p>Total number of volunteering events</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Name</th>")
@@ -247,7 +258,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs):
     of.write("</tr>\n")
 
     # Sort by number of volunteers (orderBy=3)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,5,3)
+    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,3)
 
     for row in rows:
         if (row[1]!=0):   # Ignore 'Unknown'
