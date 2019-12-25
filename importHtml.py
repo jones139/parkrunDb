@@ -51,10 +51,13 @@ def importHtmlFile(db,fname):
     prId = getParkrunId(db,prName)
     print "prId = %d" % prId
     eventId = db.getEventId(prId,dateTs)
-    if (eventId==-1):
-        print "No event found in database for %s parkrun on %s - adding it" \
-            % (prName,dateStr)
-        eventId = db.addEvent(eventNo, prId, dateTs)
+    if (eventId<>-1):
+        print("Event already exists for  %s parkrun on %s - skipping file" \
+            % (prName,dateStr))
+        return None
+    print "No event found in database for %s parkrun on %s - adding it" \
+              % (prName,dateStr)
+    eventId = db.addEvent(eventNo, prId, dateTs)
 
     print "eventId=%d" % eventId
     resultsTable = soup.find( "table", {"class":"Results-table"})

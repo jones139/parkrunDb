@@ -1,9 +1,9 @@
 #!/bin/sh
 
-python parkrunStats.py -sd 01/01/2018 -ed 31/12/2018 annual
+python parkrunStats.py -sd 01/01/2019 -ed 31/12/2019 annual
 
 
-ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  Hartlepool_2018\
+ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  Hartlepool_2019\
 
 
 #hartlepool_2018.html \

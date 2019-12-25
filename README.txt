@@ -10,13 +10,9 @@ Initialise the database with:
         sqlite3 parkrun.db <createdb.sqlite
 
 Import the data files into the database with:
-	time ./importHtml.py --iddb=iddb.json ./html_files/ >import.txt
+	time ./importHtml.py  ./html_files/ >import.txt
 
 It should complete without errors.
-Check for unidentified volunteers:
-      grep ERROR import.txt
-
-If there are errors, add entries into iddb.json, re-initialise the database and repeat the import above.
 
 Produce some statistics with:
 	./parkrunStats.py -h
