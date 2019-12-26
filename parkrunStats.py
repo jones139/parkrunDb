@@ -50,6 +50,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("<tr>")
     of.write("<th>Year</th>")
     of.write("<th>Number of Events</th>")
+    of.write("<th>Average Attendance</th>")
     of.write("<th>Number of Runs</th>")
     of.write("<th>Number of Volunteers</th>")
     of.write("<th>Number of PBs</th>")
@@ -60,29 +61,45 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
                                         db.dateStr2ts("01/01/2000"),
                                         endTs)
     graphX = []
-    graphY = []
+    graphAnnualAtt = []
+    graphAverageAtt = []
     for row in rows:
         of.write("<tr>")
         of.write("<td>%s</td>" % row[0])
         of.write("<td>%s</td>" % row[1])
+        of.write("<td>%d</td>" % int(row[2]/row[1]))
         of.write("<td>%s</td>" % row[2])
         of.write("<td>%s</td>" % row[3])
         of.write("<td>%s</td>" % row[4])
         of.write("<td>%s</td>" % row[5])
         of.write("</tr>\n")
         graphX.append(row[0])
-        graphY.append(row[2])
+        graphAnnualAtt.append(row[2])
+        graphAverageAtt.append(row[2]/row[1])
     of.write("</table>")
+
     # Make annual attendance graph
     fig, ax = plt.subplots()
-    bar1 = ax.bar(graphX,graphY)
+    bar1 = ax.bar(graphX,graphAnnualAtt)
     ax.set_xlabel('Year')
-    ax.set_ylabel('Runs')
-    plt.title('Annual Attendance')
+    ax.set_ylabel('Total Runs')
+    plt.title('%s Parkrun Annual Attendance' % parkrunStr)
     plt.savefig(os.path.join(dirName,'annual_attendance.png'))
 
+    # Make average attendance graph
+    fig, ax = plt.subplots()
+    bar1 = ax.bar(graphX,graphAverageAtt)
+    ax.set_xlabel('Year')
+    ax.set_ylabel('%s Parkrun Average Attendance' % parkrunStr)
+    plt.title('Average Annual Attendance')
+    plt.savefig(os.path.join(dirName,'average_annual_attendance.png'))
+
+    
     of.write('<img src="annual_attendance.png" '\
              'alt="Annual Attendance Graph" '\
+             'style="width:500px;height:300px;">\n')
+    of.write('<img src="average_annual_attendance.png" '\
+             'alt="Average Annual Attendance Graph" '\
              'style="width:500px;height:300px;">\n')
     
     
@@ -111,6 +128,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write('<img src="weekly_attendance.png" '\
              'alt="Weekly Attendance Graph" '\
              'style="width:500px;height:300px;">\n')
+    of.write("<br/>\n");
 
     # Weekly PBs Graph
     #of.write("<h2>Weekly PBs</h2>\n")
@@ -233,6 +251,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("<tr>")
     of.write("<th>Name</th>")
     of.write("<th>Run Time SD (sec)</th>")
+    of.write("<th>Number of Runs</th>")
     of.write("</tr>\n")
 
     rows = getRunnerStats(db,parkrunStr,startTs,endTs,10,tableLen)
@@ -243,6 +262,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
             of.write("<tr>")
             of.write("<td>%s</td>" % row[0])
             of.write("<td>%4.1f</td>" % row[3])
+            of.write("<td>%d</td>" % row[1])
             of.write("</tr>\n")
     of.write("</table>")
 
