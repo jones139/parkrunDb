@@ -1,12 +1,26 @@
-#!/bin/sh
+#!/bin/bash
 
-python parkrunStats.py -sd 01/01/2019 -ed 31/12/2019 annual
-python parkrunStats.py -sd 01/01/2014 -ed 31/12/2019 annual
-rm -rf Hartlepool_All
-mv Hartlepool_2014 Hartlepool_All
+YEARS=(2019 2018)
+PARKRUNS=( "Hartlepool" "Rossmere" )
 
-ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  Hartlepool_2019\
-ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  Hartlepool_All\
+# DO Annual stats
+for PARKRUN in ${PARKRUNS[@]}; do
+    echo $PARKRUN
+    for YEAR in ${YEARS[@]}; do
+	echo $YEAR
+	python parkrunStats.py -pr $PARKRUN -sd 01/01/$YEAR -ed 31/12/$YEAR annual
+	ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  ${PARKRUN}_${YEAR}
+    done
+    # Do All Time Stats
+    python parkrunStats.py -pr $PARKRUN -sd 01/01/1970 -ed 31/12/2100 annual
+    rm -rf ${PARKRUN}_All
+    mv ${PARKRUN}_1970 ${PARKRUN}_All
+    ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  ${PARKRUN}_All
+done
+
+
+
+
 
 
 #hartlepool_2018.html \
