@@ -56,7 +56,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     of.write("<body>\n")
     of.write("<h1>Annual Summary for %s Parkrun</h1>\n" % parkrunStr)
 
-    of.write("<h2>Annual Attendance</h2>\n")
+    of.write("<h2 id='annual_attendance'>Annual Attendance</h2>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Year</th>")
@@ -185,34 +185,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     ###############################################
     of.write("<h2>Top Participants</h2>\n")
 
-    of.write("<h3>Top Volunteers</h3>\n")
-    of.write("<p>Total number of volunteering events</p>\n")
-    of.write("<table>\n")
-    of.write("<tr>")
-    of.write("<th></th>")
-    of.write("<th>Name</th>")
-    of.write("<th>Number of Runs</th>")
-    of.write("<th>Number of Volunteers</th>")
-    of.write("</tr>\n")
-
-    # Sort by number of volunteers (orderBy=3)
-    rows = db.getVolStats(parkrunStrArr,startTs,endTs,1,tableLen+1,3)
-
-    n = 0
-    for row in rows:
-        if (row[1]!=0):   # Ignore 'Unknown'
-            #print row
-            n += 1
-            of.write("<tr>")
-            of.write("<td>%d</td>" % n)
-            of.write("<td>%s</td>" % row[0])
-            of.write("<td>%s</td>" % row[2])
-            of.write("<td>%s</td>" % row[3])
-            of.write("</tr>\n")
-    of.write("</table>")
-
-
-    of.write("<h3>Most Runs</h3>\n")
+    of.write("<h3 id='runs'>Most Runs</h3>\n")
     of.write("<p>Total Number of Runs in the period</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -238,7 +211,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
             of.write("</tr>\n")
     of.write("</table>")
 
-    of.write("<h3>Time on Feet</h3>\n")
+    of.write("<h3 id='timeonfeet'>Time on Feet</h3>\n")
     of.write("<p>Total time spent running in the period.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -264,8 +237,33 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
             of.write("</tr>\n")
     of.write("</table>")
 
+    of.write("<h3 id='volunteers'>Top Volunteers</h3>\n")
+    of.write("<p>Total number of volunteering events</p>\n")
+    of.write("<table>\n")
+    of.write("<tr>")
+    of.write("<th></th>")
+    of.write("<th>Name</th>")
+    of.write("<th>Number of Runs</th>")
+    of.write("<th>Number of Volunteers</th>")
+    of.write("</tr>\n")
 
-    of.write("<h3>Keenest</h3>\n")
+    # Sort by number of volunteers (orderBy=3)
+    rows = db.getVolStats(parkrunStrArr,startTs,endTs,1,tableLen+1,3)
+
+    n = 0
+    for row in rows:
+        if (row[1]!=0):   # Ignore 'Unknown'
+            #print row
+            n += 1
+            of.write("<tr>")
+            of.write("<td>%d</td>" % n)
+            of.write("<td>%s</td>" % row[0])
+            of.write("<td>%s</td>" % row[2])
+            of.write("<td>%s</td>" % row[3])
+            of.write("</tr>\n")
+    of.write("</table>")
+    
+    of.write("<h3 id='keenest'>Keenest</h3>\n")
     of.write("<p>Total Participation (run + volunteer). Note: Running and volunteering on the same day counts.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -297,7 +295,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
 
 
 
-    of.write("<h3>Consistency</h3>\n")
+    of.write("<h3 id='consistency'>Consistency</h3>\n")
     of.write("<p>Smallest variation (standard deviation) in run times.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -320,10 +318,11 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
             of.write("<td>%4.1f</td>" % row[3])
             of.write("<td>%d</td>" % row[1])
             of.write("</tr>\n")
-    of.write("</table>")
+    of.write("</table>\n")
 
 
-    
+    of.write("<h1 id='about'>About</h1>\n")
+    of.write("<p>Summary Produced by <a href='https://github.com/jones139/parkrunDb'>parkrunStats.py<a> from data copied from published parkrun results</p>\n")
 
     of.write("</body>\n")
     of.write("</html>\n")
