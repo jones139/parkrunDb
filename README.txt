@@ -1,9 +1,10 @@
 README: parkrun_db
 ==================
 
-Collect the html files of parkrun results and put them into a folder ./html_files
+This is a set of scripts that I use to maintain a database of results
+for my local parkrun and produce annual statistics.
 
-Add any new volunteers that have not run before into iddb.json to assign them a barcode number.
+To use it you need to collect the html files of parkrun results and put them into a folder (e.g. ./html_files) - you can just save using the 'html only' option in the browser as we don't kneed all the images etc, just the text of the web page.
 
 *** NOTE - this will erase the entire database!!!! ****
 Initialise the database with:
@@ -21,8 +22,9 @@ shows the command line parameters.  Valid commands are:
       'results' - produce a version of the parkrun results table from the database,
       'volstats' - calculate statistics related to volunteering (it also does time on feet).
       'runstats' - calculate statistics on runs - in particular the standard deviation of run time (with outliers removed) used for the 'consistency' award.
+      'annual' - produce a folder with html file and images for an annual summary.
 
-The output is not pretty - just lists of numbers which you have to turn into something presentable, sorry!
+The output is not pretty for many of the options - just lists of numbers which you have to turn into something presentable, sorry!   This is what the 'annual' option attempts to do.
 
 for 'volstats' the output is:
     Name,

@@ -372,7 +372,9 @@ class parkrunDbLib:
             #strftime('%d-%m-%Y', (date/1000)) as_string
             sqlStr = (
                 "select yearStr, count(eventNo), sum(runners), sum(volunteers), "
-                "sum(PBcount), sum(FirstTimeCount) from "
+                "sum(PBcount), sum(FirstTimeCount), sum(totalRunTime),  "
+                "sum(numValidRunners) "
+                "from "
                 "(select eventNo, id, dateVal, "
                 "strftime('%Y',datetime(dateVal, 'unixepoch',"
                 "'localtime')) as yearStr, "
@@ -392,6 +394,16 @@ class parkrunDbLib:
                 "(select count(id) from runs "
                 "    where runs.eventId=events.Id and runs.note='First Timer!') "
                 "    as FirstTimecount "
+                ", "
+                "(select sum(runTime) from runs "
+                "    where runs.eventId=events.Id and runs.roleId=0 "
+                "          and runs.runTime<9000) "
+                "    as totalRunTime "
+                ", "
+                "(select count(runTime) from runs "
+                "    where runs.eventId=events.Id and runs.roleId=0 "
+                "          and runs.runTime<9000) "
+                "    as numValidRunners "
                 "from events "
                 "where parkrunId = ? "
                 " and dateVal>=? and dateVal<=? "
@@ -699,7 +711,6 @@ class parkrunDbLib:
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows
-
 
         
 if __name__ == "__main__":

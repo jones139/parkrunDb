@@ -66,6 +66,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     of.write("<th>Number of Volunteers</th>")
     of.write("<th>Number of PBs</th>")
     of.write("<th>Number of First Timers</th>")
+    of.write("<th>Mean Run Time (min)</th>")
     of.write("</tr>\n")
 
     rows = db.getEventAttendanceSummary(parkrunStrArr[0],
@@ -83,6 +84,9 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
         of.write("<td>%s</td>" % row[3])
         of.write("<td>%s</td>" % row[4])
         of.write("<td>%s</td>" % row[5])
+        of.write("<td>%3.1f</td>" % (
+            float(row[6]/row[7]/60.)
+        ) )
         of.write("</tr>\n")
         graphX.append(row[0])
         graphAnnualAtt.append(row[2])
@@ -139,6 +143,13 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     of.write('<img src="weekly_attendance.png" '\
              'alt="Weekly Attendance Graph" '\
              'style="width:500px;height:300px;">\n')
+
+    #Run Time Histogram
+    getTimeHistogram(db, parkrunStrArr[0], startTs, endTs, dirName)
+    of.write('<img src="finish_time_hist.png" '\
+             'alt="Finish Time Histogram" '\
+             'style="width:500px;height:300px;">\n')
+
     of.write("<br/>\n");
 
     # Weekly PBs Graph
@@ -335,7 +346,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     print("*     DONE!     *")
     print("*****************")
 
-def getTimeHistogram(db,parkrunStr,startTs,endTs):
+def getTimeHistogram(db,parkrunStr,startTs,endTs, outDir="."):
     eventRows = db.getEventHistory(parkrunStr,startTs,endTs)
 
     runTimes = []
@@ -344,15 +355,19 @@ def getTimeHistogram(db,parkrunStr,startTs,endTs):
         runRows = db.getEventResults(parkrunStr,eventNo)
         for runRow in runRows:
             # print(runRow)
-            if (runRow[0]>0):
+            # the 9000 check is because the unknown runner gets
+            # a time of 9999 seconds, which messes up the numbers!
+            if (runRow[0]>0 and (runRow[2]<9000)):
                 runTimes.append(runRow[2]/60.)
     #print(runTimes)
     runTimesArr = np.array(runTimes)
     print("Min Time  is %8.0f min" % np.min(runTimesArr))
     print("Mean Time  is %8.0f min" % np.mean(runTimesArr))
+    print("Median Time  is %8.0f min" % np.median(runTimesArr))
+    print("Max Time  is %8.0f min" % np.max(runTimesArr))
     print("StDev Time is %8.0f min" % np.std(runTimesArr))
-    hist = np.histogram(runTimesArr,60,(1,60))
-    graphX = range(1,61)
+    hist = np.histogram(runTimesArr,90,(1,90))
+    graphX = range(1,91)
     print(len(hist[0]),len(graphX))
     print(graphX)
     print(hist[0])
@@ -360,8 +375,13 @@ def getTimeHistogram(db,parkrunStr,startTs,endTs):
     bar1 = ax.bar(graphX,hist[0])
     ax.set_xlabel('Time(min)')
     ax.set_ylabel('Runs')
-    plt.title('Finish Time Distribution')
-    plt.savefig(os.path.join('.','finish_time_hist.png'))
+    plt.title('%s Parkrun Finish Time Distribution\n%s to %s\nMedian=%2.0f min' %
+              (parkrunStr,
+               db.ts2dateStr(startTs),
+               db.ts2dateStr(endTs),
+               np.median(runTimesArr)
+              ))
+    plt.savefig(os.path.join(outDir,'finish_time_hist.png'))
     print("Histogram stored as finish_time_hist.png")
 
     
