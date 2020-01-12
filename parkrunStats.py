@@ -12,10 +12,21 @@ import errno
 import shutil
 import numpy as np
 
-def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
+def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     """ Produce an HTML summary of the given period.
     """
     print("getAnnualSummary - startTs=%s, endTs=%s" % (startTs, endTs))
+    parkrunStr = ""
+    first = True
+    for prStr in parkrunStrArr:
+        if (first):
+            parkrunStr = "%s" % prStr
+            first = False
+        else:
+            parkrunStr = "%s-%s" % (parkrunStr, prStr)
+
+    print("parkrunStr = %s" % parkrunStr)
+        
     dirName = "%s_%s" % (parkrunStr,
                          datetime.datetime.fromtimestamp(startTs).strftime('%Y'))
     outFname = "index.html"
@@ -57,7 +68,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("<th>Number of First Timers</th>")
     of.write("</tr>\n")
 
-    rows = db.getEventAttendanceSummary(parkrunStr,
+    rows = db.getEventAttendanceSummary(parkrunStrArr[0],
                                         db.dateStr2ts("01/01/2000"),
                                         endTs)
     graphX = []
@@ -83,15 +94,15 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     bar1 = ax.bar(graphX,graphAnnualAtt)
     ax.set_xlabel('Year')
     ax.set_ylabel('Total Runs')
-    plt.title('%s Parkrun Annual Attendance' % parkrunStr)
+    plt.title('%s Parkrun Annual Attendance' % parkrunStrArr[0])
     plt.savefig(os.path.join(dirName,'annual_attendance.png'))
 
     # Make average attendance graph
     fig, ax = plt.subplots()
     bar1 = ax.bar(graphX,graphAverageAtt)
     ax.set_xlabel('Year')
-    ax.set_ylabel('%s Parkrun Average Attendance' % parkrunStr)
-    plt.title('Average Annual Attendance')
+    ax.set_ylabel('%s Parkrun Average Attendance' % parkrunStrArr[0])
+    plt.title('%s Parkrun Average Attendance' % parkrunStrArr[0])
     plt.savefig(os.path.join(dirName,'average_annual_attendance.png'))
 
     
@@ -105,7 +116,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     
     of.write("<h2>Statistics for Events between %s and %s</h2>\n" \
              % (db.ts2dateStr(startTs), db.ts2dateStr(endTs)))
-    rows = db.getEventHistory(parkrunStr,startTs,endTs)
+    rows = db.getEventHistory(parkrunStrArr[0],startTs,endTs)
     graphX = []
     graphY = []
     for row in rows:
@@ -116,8 +127,8 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     fig, ax = plt.subplots()
     bar1 = ax.bar(graphX,graphY)
     ax.set_xlabel('Event Number')
-    ax.set_ylabel('Runs')
-    plt.title('Number of Participants at Each Parkrun')
+    ax.set_ylabel('Attendance')
+    plt.title('%s Parkrun Attendance' % parkrunStrArr[0])
     plt.savefig(os.path.join(dirName,'weekly_attendance.png'))
 
     maxAttendance = max(graphY)
@@ -135,7 +146,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write('<img src="weekly_PBs.png" '\
              'alt="Weekly PBs Graph" '\
              'style="width:500px;height:300px;">\n')
-    rows = db.getEventHistory(parkrunStr,startTs,endTs)
+    rows = db.getEventHistory(parkrunStrArr[0],startTs,endTs)
     graphX = []
     graphY = []
     for row in rows:
@@ -155,7 +166,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write('<img src="weekly_First_Timers.png" '\
              'alt="Weekly First Timers Graph" '\
              'style="width:500px;height:300px;">\n')
-    rows = db.getEventHistory(parkrunStr,startTs,endTs)
+    rows = db.getEventHistory(parkrunStrArr[0],startTs,endTs)
     graphX = []
     graphY = []
     for row in rows:
@@ -185,7 +196,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("</tr>\n")
 
     # Sort by number of volunteers (orderBy=3)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,3)
+    rows = db.getVolStats(parkrunStrArr,startTs,endTs,1,tableLen+1,3)
 
     n = 0
     for row in rows:
@@ -212,7 +223,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("</tr>\n")
 
     # Sort by number of runs (orderBy=2)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,2)
+    rows = db.getVolStats(parkrunStrArr,startTs,endTs,1,tableLen+1,2)
 
     n = 0
     for row in rows:
@@ -237,7 +248,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("</tr>\n")
 
     # Sort by time on feet (orderBy=4)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,4)
+    rows = db.getVolStats(parkrunStrArr,startTs,endTs,1,tableLen+1,4)
 
     n = 0
     for row in rows:
@@ -266,7 +277,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("</tr>\n")
 
     # Sort by total number of activities (orderBy=1)
-    rows = db.getVolStats(parkrunStr,startTs,endTs,1,tableLen+1,1)
+    rows = db.getVolStats(parkrunStrArr,startTs,endTs,1,tableLen+1,1)
 
     print("Processing Keenest....")
     n = 0
@@ -296,7 +307,7 @@ def getAnnualSummary(db,parkrunStr,startTs,endTs, tableLen=10):
     of.write("<th>Number of Runs</th>")
     of.write("</tr>\n")
 
-    rows = getRunnerStats(db,parkrunStr,startTs,endTs,10,tableLen)
+    rows = getRunnerStats(db,parkrunStrArr[0],startTs,endTs,10,tableLen)
     
     n = 0
     for row in rows:
@@ -512,6 +523,16 @@ if __name__ == "__main__":
     if (verbose): print "endTs = %d (%s)" % (endTs,db.ts2dateStr(endTs))
         
 
+    
+    parkrunStrParts = parkrunStr.split(",")
+    if (',' in parkrunStr):
+        print("contains comma!!!")
+    parkrunStrArr = []
+    for prStr in parkrunStrParts:
+        parkrunStrArr.append(prStr)
+    print(parkrunStrArr)
+        
+    
     if (cmdStr=="history"):
         getEventHistory(db,parkrunStr,startTs,endTs)
     elif (cmdStr=="results"):
@@ -525,7 +546,7 @@ if __name__ == "__main__":
         for r in resultsArr:
             print r
     elif (cmdStr=="annual"):
-        getAnnualSummary(db,parkrunStr,startTs,endTs)
+        getAnnualSummary(db,parkrunStrArr,startTs,endTs)
     else:
         print "ERROR: Command %s not recognised" % cmdStr
 

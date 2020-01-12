@@ -1,21 +1,23 @@
 #!/bin/bash
 
-YEARS=(2019 2018)
-PARKRUNS=( "Hartlepool" "Rossmere" )
+YEARS=(2014 2015 2016 2017 2018 2019 )
+PARKRUNS=( "Hartlepool,Rossmere" "Hartlepool" "Rossmere" )
 
 # DO Annual stats
 for PARKRUN in ${PARKRUNS[@]}; do
     echo $PARKRUN
+    OUTDIR=${PARKRUN//[,]/-}
+    echo $OUTDIR
     for YEAR in ${YEARS[@]}; do
 	echo $YEAR
 	python parkrunStats.py -pr $PARKRUN -sd 01/01/$YEAR -ed 31/12/$YEAR annual
-	ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  ${PARKRUN}_${YEAR}
+	ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  ${OUTDIR}_${YEAR}
     done
     # Do All Time Stats
     python parkrunStats.py -pr $PARKRUN -sd 01/01/1970 -ed 31/12/2100 annual
-    rm -rf ${PARKRUN}_All
-    mv ${PARKRUN}_1970 ${PARKRUN}_All
-    ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  ${PARKRUN}_All
+    rm -rf ${OUTDIR}_All
+    mv ${OUTDIR}_1970 ${OUTDIR}_All
+    ncftpput -f ~/Dropbox/openseizuredetector.ftp -R /public_html/static  ${OUTDIR}_All
 done
 
 

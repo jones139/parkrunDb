@@ -6,6 +6,8 @@ import sqlite3
 import json
 import dateutil.parser
 import datetime, time
+import numpy as np
+import pandas as pd
 
 class parkrunDbLib:
     def __init__(self,dbFname, idFname = None, Debug=True):
@@ -97,7 +99,7 @@ class parkrunDbLib:
     #########################################
     # Events
     def getEvents(self,parkrunId,dateMin='1970-01-01',dateMax='2100-01-01'):
-        sqlStr = "select date, parkruns.name, eventNo from events, parkruns where (parkruns.id=events.parkrunId and events.date>=date(?) and events.date<=date(?)) order by events.date"
+        sqlStr = "select dateVal, parkruns.name, eventNo from events, parkruns where (parkruns.id=events.parkrunId and events.dateVal>=date(?) and events.dateVal<=date(?)) order by events.dateVal"
         cur = self.conn.execute(sqlStr,(dateMin,dateMax,))
         rows = cur.fetchall()
         parkruns = []
@@ -306,13 +308,20 @@ class parkrunDbLib:
     #############################
     # Queries
 
-    def getEventsListSql(self,prId,startTs,endTs):
+    def getEventsListSql(self,prIdArr,startTs,endTs):
         """ Returns (sql,paramDict) which is the 
         SQL query to return the list of event IDs for parkrun prId
         beween the specified dates, and a dictionary of the parameters.
         """
-        sqlStr = "select id from events where parkrunId=:parkrunId and dateVal>=:startTs and dateVal<=:endTs order by dateVal"
-        paramDict = {"parkrunId":prId, "startTs":startTs,"endTs":endTs}
+        # Make sure our ID array list is really a list, not a single value.
+        if not isinstance(prIdArr, (list, tuple)):
+            prIdArr= [prIdArr]
+        
+        # FIXME - I am sure this is a bad idea but can't manage to
+        # set a list as a parameter to sqlite3?
+        prIdTuple = tuple(prIdArr)
+        sqlStr = 'select id from events where parkrunId in (' + ','.join((str(n) for n in prIdTuple)) + ' ) and dateVal>=:startTs and dateVal<=:endTs order by dateVal'
+        paramDict = {"startTs":startTs,"endTs":endTs}
         return sqlStr,paramDict
 
     def getEventHistory(self,parkrunStr,startTs,endTs):
@@ -417,7 +426,69 @@ class parkrunDbLib:
             rows = cur.fetchall()
             return rows
 
-    def getVolStats(self,parkrunStr,startTs,endTs,thresh,limit,orderBy):
+
+    def getResultsDf(self,parkrunStrArr,startTs,endTs):
+        """ returns a pandas dataframe containing results for the given 
+        list of parkruns between the specified dates (which should be unix
+        timestamps - use dateStr2ts to generate these from strings).
+        """
+        # If we are passed a single parkrun string, turn it into a
+        # list, so we know we have a list of parkruns to deal with.
+        if not isinstance(parkrunStrArr, (list, tuple)):
+            print("converting parkrunStr into an array")
+            parkrunStrArr = [parkrunStrArr]
+        # Now get the IDs of the parkruns    
+        prIdArr = []
+        for parkrunStr in parkrunStrArr:
+            prId = self.getParkrunId(parkrunStr)
+            if (prId == -1):
+                print "ERROR - Parkrun %s not found" % parkrunStr
+            else:
+                prIdArr.append(prId)
+                print ("getVolStats - parkrunStr=%s (id=%d)"
+                       % (parkrunStr,prId))
+
+        if (len(prIdArr) == 0):
+            print("ERROR - no valid parkruns found.")
+            return None
+        else:
+            print("prIdArr=",prIdArr)
+            # Get the SQL string to give us a list of event IDs to use
+            # in queries.
+            selEventsSql,sqlParams = self.getEventsListSql(prIdArr[0],startTs,endTs)
+            print("selEventsSql="+selEventsSql,sqlParams)
+
+            sqlStr = ("select events.dateVal, "
+                      " events.parkrunId, parkruns.name, "
+                      " events.eventNo,  "
+                      " runs.finishPos, runners.name, runners.runnerNo, "
+                      " runs.runTime, runners.gender, runners.club,  "
+                      " runs.roleId, runs.note, runs.genderPos, "
+                      " runs.ageCat, runs.ageGrade "
+                      " from runs, runners, events, parkruns " 
+                      " where runs.runnerId=runners.Id "
+                      " and events.id = runs.eventId "
+                      " and events.parkrunId = parkruns.id "
+                      " and runs.eventId in (%s) "
+                      " order by events.dateVal" % selEventsSql)
+
+            df = pd.read_sql_query(sqlStr,self.conn, params=sqlParams)
+            #df.describe()
+            #print(df)
+            #exit(-1)
+            return(df)
+
+    def getVolStats2(self, parkrunStrArr, startTs, endTs,
+                     thresh, limit, orderBy):
+        df = self.getResultsDf(parkrunStrArr, startTs, endTs)
+        volFilter = df['roleId'] == 1
+        volDf = df[volFilter]
+        volDf.describe()
+
+        return(volDf)
+        
+        
+    def getVolStats(self,parkrunStrArr,startTs,endTs,thresh,limit,orderBy):
         """ returns set of rows containing 
         volunteering statistics for the given parkrun between the specified
         dates.
@@ -426,16 +497,32 @@ class parkrunDbLib:
         Returns 'limit' number of rows
         OrderBy is an integer 1 = total activities, 2=runs, 3= volunteers
         """
-        prId = self.getParkrunId(parkrunStr)
-        print ("getVolStats - parkrunStr=%s (id=%d)"
-               % (parkrunStr,prId))
-        if (prId==-1 ):
-            print "ERROR - Parkrun %s not found" % parkrunStr
+        # If we are passed a single parkrun string, turn it into a
+        # list, so we know we have a list of parkruns to deal with.
+        if not isinstance(parkrunStrArr, (list, tuple)):
+            parkrunStrArr = [parkrunStrArr]
+        # Now get the IDs of the parkruns    
+        prIdArr = []
+        for parkrunStr in parkrunStrArr:
+            prId = self.getParkrunId(parkrunStr)
+            if (prId != -1):
+                prIdArr.append(prId)
+                #print ("getVolStats - parkrunStr=%s (id=%d)"
+                #       % (parkrunStr,prId))
+            else:
+                print "ERROR - Parkrun %s not found" % parkrunStr
+
+        if (len(prIdArr) == 0):
+            print("ERROR - no valid parkruns found.")
             return None
         else:
             # Get the SQL string to give us a list of event IDs to use
             # in queries.
-            selEventsSql,sqlParams = self.getEventsListSql(prId,startTs,endTs)
+            selEventsSql,sqlParams = self.getEventsListSql(prIdArr,startTs,endTs)
+            print(selEventsSql, sqlParams)
+            #cur = self.conn.execute(selEventsSql,sqlParams)
+            #rows = cur.fetchall()
+            #print(rows)
 
             # calculate number of runs for each runner
             runsSqlStr = (
@@ -560,6 +647,7 @@ class parkrunDbLib:
             sqlParams['limit']=limit
             
             if (self.DEBUG): print sqlStr,sqlParams
+            print sqlStr,sqlParams
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows
@@ -617,9 +705,16 @@ class parkrunDbLib:
 if __name__ == "__main__":
     db = parkrunDbLib("parkrun.db")
     print "Parkruns: ", db.getParkruns()
-    print "Parkrun 0 = ", db.getParkrunName(0)
-    print "Parkrun 0 events= ", db.getEvents(0)
-    print "Parkrun 0 event on 01/01/2018 is event no ", db.getEventId(0,"01/01/2018")
-    print db.getEventId(0,"01/01/2018")
+    print "Parkrun 0 = ", db.getParkrunName(1)
+    print "Parkrun 0 events= ", db.getEvents(1)
+    print "Parkrun 0 event on 01/01/2018 is event no ", db.getEventId(1,"01/01/2018")
+    print db.getEventId(1,"01/01/2018")
     #print db.getEventId(0,"01/01/2018",True)
     #print db.getEventId(0,"01/01/2018")
+
+    parkrunStrArr=("Hartlepool", "Rossmere")
+    results = db.getVolStats2(parkrunStrArr,
+                            db.dateStr2ts("01/01/1970"),
+                              db.dateStr2ts("01/01/2030"), 1, 10, 1)
+
+    print(results)
