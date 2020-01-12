@@ -565,7 +565,7 @@ if __name__ == "__main__":
         for r in resultsArr:
             print r
     elif (cmdStr=="annual"):
-        getAnnualSummary(db,parkrunStrArr,startTs,endTs)
+        getAnnualSummary(db,parkrunStrArr,startTs,endTs,limit)
     else:
         print "ERROR: Command %s not recognised" % cmdStr
 
