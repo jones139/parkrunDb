@@ -29,26 +29,33 @@ def getEventsList(eventName):
     response = urllib2.urlopen(req)
     print response.info()
     html = response.read()
+    #print(html)
     response.close()
 
     soup = BeautifulSoup(html, 'html.parser')
 
-    resultsTable = soup.find( "table", {"id":"results"})
+    resultsTable = soup.find( "table", {"class":"Results-table"})
+    #print(resultsTable)
     for row in resultsTable.findAll("tr"):
+        #print(row)
         cells = row.findAll("td")
+        #print(cells)
         if len(cells)>0:
             href = cells[1].find("a", href=True)
-            #print href['href']
             hrefParts = href['href'].split("=")
-            if (len(hrefParts)>0):
+            #print(href['href'],hrefParts,len(hrefParts))
+            if (len(hrefParts)>1):
                 eventsList.append(int(hrefParts[1]))
+            else:
+                eventsList.append(hrefParts[0])
     return eventsList
 
 
 
 
 def getResultsHtml(eventName,eventNo):
-    baseUrl = "http://www.parkrun.org.uk/%s/results/weeklyresults/?runSeqNumber=%d"
+    #baseUrl = "http://www.parkrun.org.uk/%s/results/weeklyresults/?runSeqNumber=%d"
+    baseUrl = "http://www.parkrun.org.uk/%s/results/results/%d/"
     url = baseUrl % (eventName,eventNo)
     print url
     user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
@@ -103,7 +110,7 @@ else:
 
 
 eventList =  getEventsList(parkrun)
-
+print("eventList=",eventList)
 
 if (os.path.exists(outDir)):
     if (os.path.isdir(outDir)):
@@ -119,7 +126,8 @@ else:
 
 print eventMin, eventMax
 for eventNo in range(eventMin,eventMax+1):
-    if (eventNo in eventList):
+    if (True):
+    #if (eventNo in eventList):
         print "Downloading Event No %d" % eventNo
         h = getResultsHtml(parkrun,eventNo)
         fname = os.path.join(outDir,"%s_%d.html" % (parkrun,eventNo))

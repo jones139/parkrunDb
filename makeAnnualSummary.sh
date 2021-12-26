@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #YEARS=(2014 2015 2016 2017 2018 2019 )
-YEARS=( 2019 )
+YEARS=( 2020 )
 #PARKRUNS=( "Hartlepool,Rossmere" "Hartlepool" "Rossmere" )
 PARKRUNS=( "Hartlepool" "Hartlepool,Rossmere" )
 
