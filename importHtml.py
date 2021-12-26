@@ -3,7 +3,7 @@
 It is assumed that each html file is a parkrun results page saved from the
 web site.
 """
-import urllib2
+#import urllib
 from bs4 import BeautifulSoup
 import re
 from parkrunDbLib import parkrunDbLib
@@ -18,10 +18,10 @@ def getParkrunId(db,prName):
     """
     prId = db.getParkrunId(prName)
     if (prId==-1):
-        print "Parkrun %s not in database - adding it" % prName
-        print db.addParkrun(prName)
+        print("Parkrun %s not in database - adding it" % prName)
+        print(db.addParkrun(prName))
         prId = db.getParkrunId(prName)
-    print "prId= %d " % prId
+    print("prId= %d " % prId)
     return prId
 
 def importHtmlFile(db,fname):
@@ -41,25 +41,25 @@ def importHtmlFile(db,fname):
     #print prName
     #print soup.find("h3").contents
     #dateStr = soup.find("h3").contents[0].split('-')[1].split()[0]
-    dateStr = soup.find("h3").contents[0]
+    dateStr = soup.find("h3").find("span").contents[0]
     eventNoStr = soup.find("h3").contents[2].contents[0]
     eventNo = int(eventNoStr.strip('#'))
-    print prName, eventNo, dateStr
+    print(prName, eventNo, dateStr)
 
     dateTs = db.dateStr2ts(dateStr)
 
     prId = getParkrunId(db,prName)
-    print "prId = %d" % prId
+    print("prId = %d" % prId)
     eventId = db.getEventId(prId,dateTs)
-    if (eventId<>-1):
+    if (eventId!=-1):
         print("Event already exists for  %s parkrun on %s - skipping file" \
             % (prName,dateStr))
         return None
-    print "No event found in database for %s parkrun on %s - adding it" \
-              % (prName,dateStr)
+    print("No event found in database for %s parkrun on %s - adding it" \
+              % (prName,dateStr))
     eventId = db.addEvent(eventNo, prId, dateTs)
 
-    print "eventId=%d" % eventId
+    print("eventId=%d" % eventId)
     resultsTable = soup.find( "table", {"class":"Results-table"})
 
     for row in resultsTable.findAll("tr", {"class":"Results-table-row"}):
@@ -79,13 +79,18 @@ def importHtmlFile(db,fname):
 
             # extract the barcode no (runnerNo) from the link in the table.
             href = row.find("td",{"class":"Results-table-td--name"}).find("a", href=True)
-            runnerNo = int(href['href'].split('=')[1])
+            print(href['href'])
+            runnerNo = int(href['href'].split('/')[-1])
             timeParts = row.find("td",{"class":"Results-table-td--time"}).contents[0].contents[0].split(":")
             if (len(timeParts)==2):
                 runnerTime = 60*int(timeParts[0])+int(timeParts[1])
             else:
                 runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
-            genderPos = row.find("td",{"class":"Results-table-td--gender"}).find("div",{"class":"detailed"}).contents[0].strip()
+            try: 
+                genderPos = row.find("td",{"class":"Results-table-td--gender"}).find("div",{"class":"detailed"}).contents[0].strip()
+            except(e):
+                genderPos = -1
+            
 
             clubRowStr = row \
                          .find("td",{"class":"Results-table-td--club"})
@@ -118,8 +123,8 @@ def importHtmlFile(db,fname):
         roleId = 0  # 0 = run, 1 = volunteer
         runnerId = db.getRunnerId(runnerNo)
         if (runnerId==-1):
-            print "No Runner found in database with Barcode ID %d - adding %s." \
-                % (runnerNo, runnerName)
+            print("No Runner found in database with Barcode ID %d - adding %s." \
+                % (runnerNo, runnerName))
             runnerId = db.addRunner(runnerNo, runnerName, club,gender)
         else:
             # Check if we have complete runner data (check gender set)
@@ -144,8 +149,8 @@ def importHtmlFile(db,fname):
         #print(volName,runnerNo)
         runnerId = db.getRunnerId(runnerNo)
         if (runnerId==-1):
-            print "No Runner found in database with Barcode No %d - adding him/her." \
-                % (runnerNo)
+            print("No Runner found in database with Barcode No %d - adding him/her." \
+                % (runnerNo))
             runnerId = db.addRunner(runnerNo, volName, "","")
 
         roleId = 1  # 0 = run, 1 = volunteer
@@ -168,7 +173,7 @@ ap.add_argument("-v", "--verbose",
 args = ap.parse_args()
 
 verbose = args.verbose
-if (verbose): print args
+if (verbose): print(args)
 
 
 inDir = args.inDir
@@ -182,10 +187,10 @@ else:
 if (os.path.exists(inDir)):
     if (os.path.isdir(inDir)):
         if (verbose):
-            print "Input Directory %s exists - OK" % inDir
+            print("Input Directory %s exists - OK" % inDir)
         if (os.path.exists(dbFname)):
             db = parkrunDbLib(dbFname, Debug=False)
-            print "Opened Database"
+            print("Opened Database")
             for root, dirs, files in os.walk(inDir):
                 for file in files:
                     if (file.endswith(".html") | file.endswith(".htm") |
@@ -193,13 +198,13 @@ if (os.path.exists(inDir)):
                         print(os.path.join(root, file))
                         importHtmlFile(db,os.path.join(root,file))
         else:
-            print "ERROR - Database file %s does not exist" % dbFname
+            print("ERROR - Database file %s does not exist" % dbFname)
             exit(-1)
     else:
-        print "ERROR:  %s exists, but is not a Directory" % inDir
+        print("ERROR:  %s exists, but is not a Directory" % inDir)
         exit(-1)
 else:
-    print "ERROR - %s does not exist" % inDir
+    print("ERROR - %s does not exist" % inDir)
     exit(-1)
 
 

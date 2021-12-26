@@ -19,7 +19,7 @@ class parkrunDbLib:
         database files - this will just crash!
         """
         self.DEBUG = Debug
-        if (self.DEBUG): print "parkrunDbLib.__init()__: fname=%s" % dbFname
+        if (self.DEBUG): print("parkrunDbLib.__init()__: fname=%s" % dbFname)
         self.conn = sqlite3.connect(dbFname)
         self.idFname = idFname
         self.iddb = None  # We cache the contents of idFname the first time it is used.
@@ -28,6 +28,7 @@ class parkrunDbLib:
     # Utilities
     def dateStr2ts(self,dateStr):
         """ Convert a string date dd/mm/yyyy to unix timestamp """
+        print("dateStr2ts(dateStr=%s)" % dateStr)
         dt = dateutil.parser.parse(dateStr,dayfirst=True)
         ts = time.mktime(dt.timetuple())
         return ts
@@ -35,7 +36,7 @@ class parkrunDbLib:
     def ts2dateStr(self,ts):
         """ Convert a unix timestamp to dd/mm/yyyy string
         """
-        print type(ts),ts
+        print(type(ts),ts)
         return datetime.datetime.fromtimestamp(ts).strftime('%d/%m/%Y')
 
     #########################################
@@ -45,7 +46,7 @@ class parkrunDbLib:
         **** This is likely to wipe all the data in the database, so use
         carefully!!!! ****
         """
-        print "Initialising Database with file %s" % initFname
+        print("Initialising Database with file %s" % initFname)
         f = open(initFname,"r")
         sqlStr = f.read()
         f.close()
@@ -88,12 +89,12 @@ class parkrunDbLib:
         sqlStr = ("insert into parkruns "
                   "(parkrunRef,name,created,modified) "
                   "values(?, ? ,date('now'),date('now'));")
-        if (self.DEBUG): print type(prName), prName
-        if (self.DEBUG): print sqlStr
+        if (self.DEBUG): print(type(prName), prName)
+        if (self.DEBUG): print(sqlStr)
         cur = self.conn.execute(sqlStr,(prName,prName,))
         prId = cur.lastrowid
         self.conn.commit()
-        if (self.DEBUG): print "addParkrun - created parkrun %s with ID %d" % (prName,prId)
+        if (self.DEBUG): print("addParkrun - created parkrun %s with ID %d" % (prName,prId))
         return prId
     
     #########################################
@@ -117,13 +118,13 @@ class parkrunDbLib:
         #Check if the event exists, if not create it.
         sqlStr = "select id from events where parkrunId=? and dateVal=?"
         sqlParams = (parkrunId,dateVal,)
-        if (self.DEBUG): print "sqlStr=%s." % sqlStr
-        if (self.DEBUG): print sqlParams
+        if (self.DEBUG): print("sqlStr=%s." % sqlStr)
+        if (self.DEBUG): print(sqlParams)
         cur = self.conn.execute(sqlStr,sqlParams)
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
             eventId = rows[0][0]
-            if (self.DEBUG): print "Found event id %d" % (eventId)
+            if (self.DEBUG): print("Found event id %d" % (eventId))
         else:
             eventId = -1
         return eventId
@@ -135,13 +136,13 @@ class parkrunDbLib:
         """
         sqlStr = "select id from events where parkrunId=? and eventNo=?"
         sqlParams = (parkrunId,eventNo,)
-        if (self.DEBUG): print "sqlStr=%s." % sqlStr
-        if (self.DEBUG): print sqlParams
+        if (self.DEBUG): print("sqlStr=%s." % sqlStr)
+        if (self.DEBUG): print(sqlParams)
         cur = self.conn.execute(sqlStr,sqlParams)
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
             eventId = rows[0][0]
-            if (self.DEBUG): print "Found event id %d" % (eventId)
+            if (self.DEBUG): print("Found event id %d" % (eventId))
         else:
             eventId = -1
         return eventId
@@ -160,14 +161,14 @@ class parkrunDbLib:
                      parkrunId,
                      dateVal,
         )
-        if(self.DEBUG): print "addEvent - sqlStr =%s." % sqlStr 
-        if(self.DEBUG): print sqlParams
+        if(self.DEBUG): print("addEvent - sqlStr =%s." % sqlStr)
+        if(self.DEBUG): print(sqlParams)
         cur = self.conn.execute(sqlStr,
                                 sqlParams
         )
         eventId = cur.lastrowid
         self.conn.commit()
-        if (self.DEBUG): print "addEvent - created event %d for date %d (%s)" % (eventId,dateVal,self.ts2dateStr(dateVal))
+        if (self.DEBUG): print("addEvent - created event %d for date %d (%s)" % (eventId,dateVal,self.ts2dateStr(dateVal)))
         return eventId
 
     #########################################
@@ -192,7 +193,7 @@ class parkrunDbLib:
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
             runnerId = rows[0][0]
-            if (self.DEBUG): print "Found runner id %d" % (runnerId)
+            if (self.DEBUG): print("Found runner id %d" % (runnerId))
         else:
             runnerId = -1
         return runnerId
@@ -209,11 +210,11 @@ class parkrunDbLib:
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
             runnerNo = rows[0][0]
-            if (self.DEBUG): print "getRunnerNoFromName() Found runner No %d in database" % (runnerNo)
+            if (self.DEBUG): print("getRunnerNoFromName() Found runner No %d in database" % (runnerNo))
         elif (self.idFname != None):
             # Attempt to look up the name in idFname file
             # idFname should contain a json array of {id,name} objects.
-            if (self.DEBUG): print "getRunnerNoFromName(): Attempting to use external runner id database."
+            if (self.DEBUG): print("getRunnerNoFromName(): Attempting to use external runner id database.")
             if (self.iddb == None):
                 f = open(self.idFname,'r')
                 self.iddb = json.load(f)
@@ -222,9 +223,9 @@ class parkrunDbLib:
             for idrec in self.iddb:
                 if idrec['name'] == nameStr and idrec['id']!= 'unknown':
                     runnerNo = int(idrec['id'])
-                    if (self.DEBUG): print "getRunnerNoFromName() Found runner No %d in id database" % (runnerNo)
+                    if (self.DEBUG): print("getRunnerNoFromName() Found runner No %d in id database" % (runnerNo))
         else:
-            if (self.DEBUG): print "getRunnerNoFromName() failed to find runner %s" % nameStr
+            if (self.DEBUG): print("getRunnerNoFromName() failed to find runner %s" % nameStr)
             runnerNo = -1
         return runnerNo
         
@@ -238,13 +239,13 @@ class parkrunDbLib:
         "modified) " \
         " values (?,?,?,?,date('now'), date('now'))"
         sqlParams = (runnerNo,nameStr,clubStr,genderStr,)
-        if(self.DEBUG): print "createRunner - sqlStr =%s." % sqlStr 
-        if(self.DEBUG): print sqlParams
+        if(self.DEBUG): print("createRunner - sqlStr =%s." % sqlStr)
+        if(self.DEBUG): print(sqlParams)
         cur = self.conn.execute(sqlStr, sqlParams)
 
         runnerId = cur.lastrowid
         self.conn.commit()
-        if (self.DEBUG): print "createRunner - created runner %d" % (runnerId)
+        if (self.DEBUG): print("createRunner - created runner %d" % (runnerId))
         return runnerId
 
     def updateRunner(self,runnerId, runnerNo, nameStr, clubStr, genderStr):
@@ -261,11 +262,11 @@ class parkrunDbLib:
                   " where id = ?"
                   )
         sqlParams = (runnerNo,nameStr,clubStr,genderStr,runnerId,)
-        if(self.DEBUG): print "updateRunner - sqlStr =%s." % sqlStr 
-        if(self.DEBUG): print sqlParams
+        if(self.DEBUG): print("updateRunner - sqlStr =%s." % sqlStr)
+        if(self.DEBUG): print(sqlParams)
         cur = self.conn.execute(sqlStr, sqlParams)
         self.conn.commit()
-        if (self.DEBUG): print "updateRunner - updated %d rows" % (cur.rowcount)
+        if (self.DEBUG): print("updateRunner - updated %d rows" % (cur.rowcount))
         return cur.rowcount
 
     
@@ -281,7 +282,7 @@ class parkrunDbLib:
         rows = cur.fetchall()
         if (len(rows)>0): # event already exists
             runId = rows[0][0]
-            if (self.DEBUG): print "Found event id %d" % (eventId)
+            if (self.DEBUG): print("Found event id %d" % (eventId))
         else:
             runId = -1
         return runId
@@ -297,12 +298,12 @@ class parkrunDbLib:
         " values (?,?,?,?,?,?,?,?,?,date('now'),date('now'))"
         sqlParams = (eventId,runnerId, roleId,  finishPos,genderPos,
                      ageCat,ageGrade,note,runTime,)
-        if(self.DEBUG): print "addRun - sqlStr =%s." % sqlStr 
-        if(self.DEBUG): print sqlParams
+        if(self.DEBUG): print("addRun - sqlStr =%s." % sqlStr)
+        if(self.DEBUG): print(sqlParams)
         cur = self.conn.execute(sqlStr,sqlParams)
         runId = cur.lastrowid
         self.conn.commit()
-        if (self.DEBUG): print "createRun - created run %d" % (runId)
+        if (self.DEBUG): print("createRun - created run %d" % (runId))
         return runId
 
     #############################
@@ -454,10 +455,10 @@ class parkrunDbLib:
         for parkrunStr in parkrunStrArr:
             prId = self.getParkrunId(parkrunStr)
             if (prId == -1):
-                print "ERROR - Parkrun %s not found" % parkrunStr
+                print("ERROR - Parkrun %s not found" % parkrunStr)
             else:
                 prIdArr.append(prId)
-                print ("getVolStats - parkrunStr=%s (id=%d)"
+                print("getVolStats - parkrunStr=%s (id=%d)"
                        % (parkrunStr,prId))
 
         if (len(prIdArr) == 0):
@@ -522,7 +523,7 @@ class parkrunDbLib:
                 #print ("getVolStats - parkrunStr=%s (id=%d)"
                 #       % (parkrunStr,prId))
             else:
-                print "ERROR - Parkrun %s not found" % parkrunStr
+                print("ERROR - Parkrun %s not found" % parkrunStr)
 
         if (len(prIdArr) == 0):
             print("ERROR - no valid parkruns found.")
@@ -614,7 +615,7 @@ class parkrunDbLib:
             sqlParams['thresh']=thresh
             sqlParams['limit']=limit
             
-            if (self.DEBUG): print sqlStr,sqlParams
+            if (self.DEBUG): print(sqlStr,sqlParams)
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows
@@ -628,10 +629,10 @@ class parkrunDbLib:
         Returns 'limit' number of rows
         """
         prId = self.getParkrunId(parkrunStr)
-        if (self.DEBUG): print ("getRunnerList - parkrunStr=%s (id=%d)"
+        if (self.DEBUG): print("getRunnerList - parkrunStr=%s (id=%d)"
                                 % (parkrunStr,prId))
         if (prId==-1 ):
-            print "ERROR - Parkrun %s not found" % parkrunStr
+            print("ERROR - Parkrun %s not found" % parkrunStr)
             return None
         else:
             # Get the SQL string to give us a list of event IDs to use
@@ -658,8 +659,8 @@ class parkrunDbLib:
             sqlParams['thresh']=thresh
             sqlParams['limit']=limit
             
-            if (self.DEBUG): print sqlStr,sqlParams
-            print sqlStr,sqlParams
+            if (self.DEBUG): print(sqlStr,sqlParams)
+            print(sqlStr,sqlParams)
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows
@@ -669,10 +670,10 @@ class parkrunDbLib:
         for the given parkrun between the specified dates
         """
         prId = self.getParkrunId(parkrunStr)
-        if (self.DEBUG): print ("getRunnerList - parkrunStr=%s (id=%d)"
+        if (self.DEBUG): print("getRunnerList - parkrunStr=%s (id=%d)"
                                 % (parkrunStr,prId))
         if (prId==-1 ):
-            print "ERROR - Parkrun %s not found" % parkrunStr
+            print("ERROR - Parkrun %s not found" % parkrunStr)
             return None
         else:
             # Get the SQL string to give us a list of event IDs to use
@@ -680,11 +681,11 @@ class parkrunDbLib:
             selEventsSql,sqlParams = self.getEventsListSql(prId,startTs,endTs)
 
             if (self.DEBUG):
-                print "EVENTS LIST TO PROCESS: ",selEventsSql,sqlParams
+                print("EVENTS LIST TO PROCESS: ",selEventsSql,sqlParams)
                 cur = self.conn.execute(selEventsSql,sqlParams)
                 rows = cur.fetchall()
                 for r in rows:
-                    print r
+                    print(r)
                 
             
             # calculate number of runs for each runner
@@ -707,7 +708,7 @@ class parkrunDbLib:
 
             sqlParams['runnerId']=runnerId
             
-            if (self.DEBUG): print sqlStr,sqlParams
+            if (self.DEBUG): print(sqlStr,sqlParams)
             cur = self.conn.execute(sqlStr,sqlParams)
             rows = cur.fetchall()
             return rows
@@ -715,11 +716,11 @@ class parkrunDbLib:
         
 if __name__ == "__main__":
     db = parkrunDbLib("parkrun.db")
-    print "Parkruns: ", db.getParkruns()
-    print "Parkrun 0 = ", db.getParkrunName(1)
-    print "Parkrun 0 events= ", db.getEvents(1)
-    print "Parkrun 0 event on 01/01/2018 is event no ", db.getEventId(1,"01/01/2018")
-    print db.getEventId(1,"01/01/2018")
+    print("Parkruns: ", db.getParkruns())
+    print("Parkrun 0 = ", db.getParkrunName(1))
+    print("Parkrun 0 events= ", db.getEvents(1))
+    print("Parkrun 0 event on 01/01/2018 is event no ", db.getEventId(1,"01/01/2018"))
+    print(db.getEventId(1,"01/01/2018"))
     #print db.getEventId(0,"01/01/2018",True)
     #print db.getEventId(0,"01/01/2018")
 
