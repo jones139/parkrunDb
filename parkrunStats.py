@@ -6,12 +6,16 @@ import argparse
 import os
 import math
 import matplotlib.pyplot as plt
-import datetime
+import matplotlib.dates as mdates
+import datetime as dt
 #  import time
 import errno
 import shutil
 import numpy as np
 
+# To get rid of a matplotlib warning!
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
 
 def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     """ Produce an HTML summary of the given period.
@@ -29,7 +33,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     print("parkrunStr = %s" % parkrunStr)
         
     dirName = "%s_%s" % (parkrunStr,
-                         datetime.datetime.fromtimestamp(startTs).strftime('%Y'))
+                         dt.datetime.fromtimestamp(startTs).strftime('%Y'))
     outFname = "index.html"
     try:
         os.makedirs(dirName)
@@ -125,14 +129,23 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     graphX = []
     graphY = []
     for row in rows:
-        graphX.append(row[0])
+        # Convert unix timestamp to python datetime objects
+        graphX.append(dt.datetime.fromtimestamp(row[2]))
         graphY.append(row[4])
-        #print(row)
     # Make graph
     fig, ax = plt.subplots()
-    bar1 = ax.bar(graphX,graphY)
-    ax.set_xlabel('Event Number')
+    bar1 = ax.plot(graphX,graphY)
+    ax.grid()
+    ax.set_xlabel('Date')
     ax.set_ylabel('Attendance')
+    if (endTs-startTs) > (400*24*3600):  # 400 days
+        print("Long time range - using YearLocator....tsDiff=%d" % (endTs-startTs))
+        ax.xaxis.set_major_locator(mdates.YearLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    else:
+        print("Short time range - using MonthLocator....tsDiff=%d" % (endTs-startTs))
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%Y'))
     plt.title('%s Parkrun Attendance' % parkrunStrArr[0])
     plt.savefig(os.path.join(dirName,'weekly_attendance.png'))
 
@@ -162,14 +175,26 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     graphX = []
     graphY = []
     for row in rows:
-        graphX.append(row[0])
+        #graphX.append(row[0])
+        # Convert unix timestamp to python datetime objects
+        graphX.append(dt.datetime.fromtimestamp(row[2]))
         graphY.append(row[6])
         #print(row)
     # Make graph
     fig, ax = plt.subplots()
-    bar1 = ax.bar(graphX,graphY)
-    ax.set_xlabel('Event Number')
-    ax.set_ylabel('PBs')
+    if (endTs-startTs) > (400*24*3600):  # 400 days
+        print("Long time range - using YearLocator....tsDiff=%d" % (endTs-startTs))
+        ax.xaxis.set_major_locator(mdates.YearLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    else:
+        print("Short time range - using MonthLocator....tsDiff=%d" % (endTs-startTs))
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%Y'))
+    bar1 = ax.plot(graphX,graphY)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of PBs')
+    ax.grid()
+
     plt.title('Number of PBs at Each Parkrun')
     plt.savefig(os.path.join(dirName,'weekly_PBs.png'))
 
@@ -182,14 +207,25 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     graphX = []
     graphY = []
     for row in rows:
-        graphX.append(row[0])
+        #graphX.append(row[0])
+        # Convert unix timestamp to python datetime objects
+        graphX.append(dt.datetime.fromtimestamp(row[2]))
         graphY.append(row[7])
         #print(row)
     # Make graph
     fig, ax = plt.subplots()
-    bar1 = ax.bar(graphX,graphY)
-    ax.set_xlabel('Event Number')
-    ax.set_ylabel('First Timers')
+    if (endTs-startTs) > (400*24*3600):  # 400 days
+        print("Long time range - using YearLocator....tsDiff=%d" % (endTs-startTs))
+        ax.xaxis.set_major_locator(mdates.YearLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+    else:
+        print("Short time range - using MonthLocator....tsDiff=%d" % (endTs-startTs))
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%Y'))
+    bar1 = ax.plot(graphX,graphY)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of First Timers')
+    ax.grid()
     plt.title('Number of First Timers at Each Parkrun')
     plt.savefig(os.path.join(dirName,'weekly_First_Timers.png'))
 
@@ -374,10 +410,12 @@ def getTimeHistogram(db,parkrunStr,startTs,endTs, outDir="."):
     print(graphX)
     print(hist[0])
     fig, ax = plt.subplots()
-    bar1 = ax.bar(graphX,hist[0])
+    bar1 = ax.plot(graphX,hist[0])
     ax.set_xlabel('Time(min)')
+    ax.set_xticks(range(0,95,5))
     ax.set_ylabel('Runs')
-    plt.title('%s Parkrun Finish Time Distribution\n%s to %s\nMedian=%2.0f min' %
+    ax.grid()
+    plt.title('%s Parkrun Finish Time Distribution\n%s to %s (Median=%2.0f min)' %
               (parkrunStr,
                db.ts2dateStr(startTs),
                db.ts2dateStr(endTs),
