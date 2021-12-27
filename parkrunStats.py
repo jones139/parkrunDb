@@ -7,10 +7,11 @@ import os
 import math
 import matplotlib.pyplot as plt
 import datetime
-import time
+#  import time
 import errno
 import shutil
 import numpy as np
+
 
 def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     """ Produce an HTML summary of the given period.
@@ -292,7 +293,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     n = 0
     for row in rows:
         if (row[1]!=0):   # Ignore 'Unknown'
-            print row
+            #print row
             n += 1
             of.write("<tr>")
             of.write("<td>%d</td>" % n)
@@ -322,7 +323,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     for row in rows:
         if (row[1]!=0):   # Ignore 'Unknown'
             n += 1
-            print row
+            #print row
             of.write("<tr>")
             of.write("<td>%d</td>" % n)
             of.write("<td>%s</td>" % row[0])
@@ -333,7 +334,8 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
 
 
     of.write("<h1 id='about'>About</h1>\n")
-    of.write("<p>Summary Produced by <a href='https://github.com/jones139/parkrunDb'>parkrunStats.py<a> from data copied from published parkrun results</p>\n")
+    of.write("<p>Summary Produced by <a href='https://github.com/jones139/parkrunDb'>parkrunStats.py<a> by Graham Jones, using data from published parkrun results</p>\n")
+    of.write("<p><a href='../Hartlepool_All/index.html'>All Time Statistics</a></p>\n")
 
     of.write("</body>\n")
     of.write("</html>\n")
@@ -390,25 +392,25 @@ def getEventHistory(db,parkrunStr,startTs,endTs):
     rows = db.getEventAttendanceSummary(parkrunStr,startTs,endTs)
     print("Annual Summary")
     for row in rows:
-        print row
+        print(row)
     rows = db.getEventHistory(parkrunStr,startTs,endTs)
     print("All Events")
     for row in rows:
-        print row
+        print(row)
 
 
 def getEventResults(db,parkrunStr,eventNo):
     """ Produce an event results summary """
     rows = db.getEventResults(parkrunStr,eventNo)
     for row in rows:
-        print row
+        print(row)
 
 def getVolStats(db,parkrunStr,startTs,endTs,thresh,limit,orderBy):
     """ produce volunteer statistics for each participant
     """
     rows = db.getVolStats(parkrunStr,startTs,endTs,thresh,limit,orderBy)
     for row in rows:
-        print row
+        print(row)
 
 def calcMeanStDev(tArr,sigTh):
     """ Calculate the mean and standard deviation of the data in tArr,
@@ -449,13 +451,13 @@ def calcMeanStDev(tArr,sigTh):
     return (nT,avT,stDev)
 
 def getRunnerStats(db,parkrunStr,startTs,endTs,thresh,limit):
-    print "getRunnerStats()"
+    print("getRunnerStats()")
     rows = db.getRunnerList(parkrunStr,startTs,endTs,thresh,10000)
     resultsArr = []
     for row in rows:
         #print row
         if (row[1]=="Unknown"):
-            print "Ignoring the Unknown Runner...."
+            print("Ignoring the Unknown Runner....")
         else:
             runnerId = row[0]
             runnerHist = db.getRunnerHistory(runnerId,parkrunStr,startTs,endTs)
@@ -486,13 +488,13 @@ if __name__ == "__main__":
     ap.add_argument("-sd", "--startDate", help="earliest date to process (defaults to '01/01/2014'")
     ap.add_argument("-ed", "--endDate", help="latest date to process (defaults to '01/01/2024'")
 
-    ap.add_argument("-v", "--verbose",
+    ap.add_argument("-v", "--verbose", default=0,
                     help="produce verbose output for debugging",
                     action="count")
     args = ap.parse_args()
 
     verbose = args.verbose
-    if (verbose): print args
+    if (verbose): print(args)
 
 
     cmdStr = args.command
@@ -538,8 +540,8 @@ if __name__ == "__main__":
     else:
         endTs = db.dateStr2ts("01/01/2024")
 
-    if (verbose): print "startTs = %d (%s)" % (startTs,db.ts2dateStr(startTs))
-    if (verbose): print "endTs = %d (%s)" % (endTs,db.ts2dateStr(endTs))
+    if (verbose): print("startTs = %d (%s)" % (startTs,db.ts2dateStr(startTs)))
+    if (verbose): print("endTs = %d (%s)" % (endTs,db.ts2dateStr(endTs)))
         
 
     
@@ -563,10 +565,10 @@ if __name__ == "__main__":
     elif (cmdStr=="runstats"):
         resultsArr = getRunnerStats(db,parkrunStr,startTs,endTs,thresh,limit)
         for r in resultsArr:
-            print r
+            print(r)
     elif (cmdStr=="annual"):
         getAnnualSummary(db,parkrunStrArr,startTs,endTs,limit)
     else:
-        print "ERROR: Command %s not recognised" % cmdStr
+        print("ERROR: Command %s not recognised" % cmdStr)
 
 

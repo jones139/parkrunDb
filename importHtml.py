@@ -88,7 +88,7 @@ def importHtmlFile(db,fname):
                 runnerTime = 3600*int(timeParts[0])+60*int(timeParts[1])+int(timeParts[2])
             try: 
                 genderPos = row.find("td",{"class":"Results-table-td--gender"}).find("div",{"class":"detailed"}).contents[0].strip()
-            except(e):
+            except:
                 genderPos = -1
             
 

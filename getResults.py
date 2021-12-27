@@ -135,7 +135,7 @@ for eventNo in range(eventMin,eventMax+1):
         f = open(fname,'w')
         f.write(h)
         f.close
-        delayTime = delay * random.uniform(0.9, 1.1)
+        delayTime = delay * random.uniform(0.2, 2.0)
         print("Sleeping for %f seconds" % delayTime)
         time.sleep(delayTime)
     else:
