@@ -55,13 +55,33 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
 
     of.write("<html>\n")
     of.write("<head>\n")
-    of.write("<title>Annual Summary for %s Parkrun</title>\n" % parkrunStr)
+    of.write("<title>%s Parkrun</title>\n" % parkrunStr)
     of.write("<link rel='stylesheet' href='styles.css'>")
     of.write("</head>\n")
     of.write("<body>\n")
-    of.write("<h1>Annual Summary for %s Parkrun</h1>\n" % parkrunStr)
-
+    of.write("<h1 id='top'>Summary for %s Parkrun %s to %s</h1>\n" %\
+             (parkrunStr,db.ts2dateStr(startTs), db.ts2dateStr(endTs)))
+    of.write("<a href='../All/index.html'>All Years</a> | ")
+    of.write("<a href='../2014/index.html'>2014</a> | ")
+    of.write("<a href='../2015/index.html'>2015</a> | ")
+    of.write("<a href='../2016/index.html'>2016</a> | ")
+    of.write("<a href='../2017/index.html'>2017</a> | ")
+    of.write("<a href='../2018/index.html'>2018</a> | ")
+    of.write("<a href='../2019/index.html'>2019</a> | ")
+    of.write("<a href='../2020/index.html'>2020</a> | ")
+    of.write("<a href='../2021/index.html'>2021</a>  \n")
+    of.write("<hr>\n")
+    of.write("<a href='#annual_attendance'>Annual Attendance</a> | ")
+    of.write("<a href='#graphs'>Graphs</a> | ")
+    of.write("<a href='#runs'>Most Runs</a> | ")
+    of.write("<a href='#timeonfeet'>Time on Feet</a> | ")
+    of.write("<a href='#volunteers'>Volunteers</a> | ")
+    of.write("<a href='#keenest'>Keenest</a> | ")
+    of.write("<a href='#consistency'>Consistency</a> | ")
+    of.write("<hr>\n")
+    
     of.write("<h2 id='annual_attendance'>Annual Attendance</h2>\n")
+    of.write("<a href='#top'>Top of Page</a><br/>")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th>Year</th>")
@@ -123,8 +143,9 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
              'style="width:500px;height:300px;">\n')
     
     
-    of.write("<h2>Statistics for Events between %s and %s</h2>\n" \
+    of.write("<h2 id='graphs'>Statistics for Events between %s and %s</h2>\n" \
              % (db.ts2dateStr(startTs), db.ts2dateStr(endTs)))
+    of.write("<a href='#top'>Top of Page</a><br/>")
     rows = db.getEventHistory(parkrunStrArr[0],startTs,endTs)
     graphX = []
     graphY = []
@@ -147,6 +168,8 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%Y'))
     plt.title('%s Parkrun Attendance' % parkrunStrArr[0])
+    plt.xticks(rotation=45)
+    plt.tight_layout()
     plt.savefig(os.path.join(dirName,'weekly_attendance.png'))
 
     maxAttendance = max(graphY)
@@ -175,11 +198,15 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     graphX = []
     graphY = []
     for row in rows:
-        #graphX.append(row[0])
-        # Convert unix timestamp to python datetime objects
-        graphX.append(dt.datetime.fromtimestamp(row[2]))
-        graphY.append(row[6])
-        #print(row)
+        # Drop the first event, because everyone was a first timer!
+        if(row[0]>1):
+            #graphX.append(row[0])
+            # Convert unix timestamp to python datetime objects
+            graphX.append(dt.datetime.fromtimestamp(row[2]))
+            graphY.append(row[6])
+        else:
+            print("Ignoring Event %d for first timer's graph" % row[0])
+            print(row)
     # Make graph
     fig, ax = plt.subplots()
     if (endTs-startTs) > (400*24*3600):  # 400 days
@@ -196,6 +223,8 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     ax.grid()
 
     plt.title('Number of PBs at Each Parkrun')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
     plt.savefig(os.path.join(dirName,'weekly_PBs.png'))
 
     # Weekly First Timers Graph
@@ -207,11 +236,13 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     graphX = []
     graphY = []
     for row in rows:
-        #graphX.append(row[0])
-        # Convert unix timestamp to python datetime objects
-        graphX.append(dt.datetime.fromtimestamp(row[2]))
-        graphY.append(row[7])
-        #print(row)
+        # Skip first event where everyone was a first timer
+        if (row[0]>1):
+            #graphX.append(row[0])
+            # Convert unix timestamp to python datetime objects
+            graphX.append(dt.datetime.fromtimestamp(row[2]))
+            graphY.append(row[7])
+            #print(row)
     # Make graph
     fig, ax = plt.subplots()
     if (endTs-startTs) > (400*24*3600):  # 400 days
@@ -227,13 +258,16 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     ax.set_ylabel('Number of First Timers')
     ax.grid()
     plt.title('Number of First Timers at Each Parkrun')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
     plt.savefig(os.path.join(dirName,'weekly_First_Timers.png'))
 
 
     ###############################################
-    of.write("<h2>Top Participants</h2>\n")
+    of.write("<h2 id='top_participants'>Top Participants</h2>\n")
 
     of.write("<h3 id='runs'>Most Runs</h3>\n")
+    of.write("<a href='#top'>Top of Page</a><br/>")
     of.write("<p>Total Number of Runs in the period</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -260,6 +294,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     of.write("</table>")
 
     of.write("<h3 id='timeonfeet'>Time on Feet</h3>\n")
+    of.write("<a href='#top'>Top of Page</a><br/>")
     of.write("<p>Total time spent running in the period.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -286,13 +321,14 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
     of.write("</table>")
 
     of.write("<h3 id='volunteers'>Top Volunteers</h3>\n")
+    of.write("<a href='#top'>Top of Page</a><br/>")
     of.write("<p>Total number of volunteering events</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
     of.write("<th></th>")
     of.write("<th>Name</th>")
-    of.write("<th>Number of Runs</th>")
     of.write("<th>Number of Volunteers</th>")
+    of.write("<th>Number of Runs</th>")
     of.write("</tr>\n")
 
     # Sort by number of volunteers (orderBy=3)
@@ -306,12 +342,13 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
             of.write("<tr>")
             of.write("<td>%d</td>" % n)
             of.write("<td>%s</td>" % row[0])
-            of.write("<td>%s</td>" % row[2])
             of.write("<td>%s</td>" % row[3])
+            of.write("<td>%s</td>" % row[2])
             of.write("</tr>\n")
     of.write("</table>")
     
     of.write("<h3 id='keenest'>Keenest</h3>\n")
+    of.write("<a href='#top'>Top of Page</a><br/>")
     of.write("<p>Total Participation (run + volunteer). Note: Running and volunteering on the same day counts.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -344,6 +381,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
 
 
     of.write("<h3 id='consistency'>Consistency</h3>\n")
+    of.write("<a href='#top'>Top of Page</a><br/>")
     of.write("<p>Smallest variation (standard deviation) in run times.</p>\n")
     of.write("<table>\n")
     of.write("<tr>")
@@ -370,8 +408,7 @@ def getAnnualSummary(db,parkrunStrArr,startTs,endTs, tableLen=10):
 
 
     of.write("<h1 id='about'>About</h1>\n")
-    of.write("<p>Summary Produced by <a href='https://github.com/jones139/parkrunDb'>parkrunStats.py<a> by Graham Jones, using data from published parkrun results</p>\n")
-    of.write("<p><a href='../Hartlepool_All/index.html'>All Time Statistics</a></p>\n")
+    of.write("<p>Summary Produced by <a href='https://github.com/jones139/parkrunDb'>parkrunStats.py<a> by Graham Jones, using data from published parkrun results.  Please email graham@openseizuredetector.org.uk with any issues or suggestions.   <a href='http://openseizuredetector.org.uk'>OpenSeizureDetector</a></p>\n")
 
     of.write("</body>\n")
     of.write("</html>\n")

@@ -569,13 +569,13 @@ class parkrunDbLib:
 
             orderByStr = ""
             if (orderBy==1):
-                orderByStr = " order by total desc "
+                orderByStr = " order by total desc, nv desc"
             elif (orderBy==2):
-                orderByStr = " order by nr desc "
+                orderByStr = " order by nr desc, nv desc "
             elif (orderBy==3):
-                orderByStr = " order by nv desc "
+                orderByStr = " order by nv desc, nr desc "
             elif (orderBy==4):
-                orderByStr = " order by timeOnFeet desc "
+                orderByStr = " order by timeOnFeet desc, nv desc "
             
             # We want all runners who have:
             #    - ran but not volunteered
