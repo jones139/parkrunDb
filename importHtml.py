@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """ Imports a folder of html files into the database.
 It is assumed that each html file is a parkrun results page saved from the
 web site.
@@ -145,7 +145,8 @@ def importHtmlFile(db,fname):
     #print(volLinks)
     for volLink in volLinks:
         volName = volLink.contents[0]
-        runnerNo = int(volLink['href'].split('=')[1])
+        print(volLink)
+        runnerNo = int(volLink['href'].split('=')[1].split('\\')[0])
         #print(volName,runnerNo)
         runnerId = db.getRunnerId(runnerNo)
         if (runnerId==-1):

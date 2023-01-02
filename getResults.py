@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Download parkrun results from web site, and save to a folder.
 # ***WE ARE NOT ALLOWED OT USE THIS - Instead use a web browser to select the
@@ -12,7 +12,7 @@
 import argparse
 import os
 import time
-import urllib2
+import urllib.request
 from bs4 import BeautifulSoup
 import re
 import json
@@ -22,12 +22,12 @@ def getEventsList(eventName):
     baseUrl = "http://www.parkrun.org.uk/%s/results/eventhistory/"
     eventsList = []
     url = baseUrl % (eventName)
-    print url
+    print(url)
     user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
     headers = {'User-Agent': user_agent}
-    req = urllib2.Request(url,None,headers)
-    response = urllib2.urlopen(req)
-    print response.info()
+    req = urllib.request.Request(url,None,headers)
+    response = urllib.request.urlopen(req)
+    print(response.info())
     html = response.read()
     #print(html)
     response.close()
@@ -57,12 +57,12 @@ def getResultsHtml(eventName,eventNo):
     #baseUrl = "http://www.parkrun.org.uk/%s/results/weeklyresults/?runSeqNumber=%d"
     baseUrl = "http://www.parkrun.org.uk/%s/results/results/%d/"
     url = baseUrl % (eventName,eventNo)
-    print url
+    print(url)
     user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
     headers = {'User-Agent': user_agent}
-    req = urllib2.Request(url,None,headers)
-    response = urllib2.urlopen(req)
-    print response.info()
+    req = urllib.request.Request(url,None,headers)
+    response = urllib.request.urlopen(req)
+    print(response.info())
     html = response.read()
     response.close()
 
@@ -84,7 +84,7 @@ ap.add_argument("-o", "--outDir",
 args = ap.parse_args()
 
 verbose = args.verbose
-if (verbose): print args
+if (verbose): print(args)
 
 
 if (args.parkrun!=None):
@@ -115,30 +115,30 @@ print("eventList=",eventList)
 if (os.path.exists(outDir)):
     if (os.path.isdir(outDir)):
         if (verbose):
-            print "Output Directory already exists - OK"
+            print("Output Directory already exists - OK")
     else:
-        print "ERROR:  %s exists, but is not a Directory" % outDir
+        print("ERROR:  %s exists, but is not a Directory" % outDir)
         exit(-1)
 else:
-    print "Creating output directory %s" % outDir
+    print("Creating output directory %s" % outDir)
     os.makedirs(outDir)
 
 
-print eventMin, eventMax
+print(eventMin, eventMax)
 for eventNo in range(eventMin,eventMax+1):
     if (True):
     #if (eventNo in eventList):
-        print "Downloading Event No %d" % eventNo
+        print("Downloading Event No %d" % eventNo)
         h = getResultsHtml(parkrun,eventNo)
         fname = os.path.join(outDir,"%s_%d.html" % (parkrun,eventNo))
-        if (verbose):  print "fname=%s." % fname
+        if (verbose):  print ("fname=%s." % fname)
         f = open(fname,'w')
-        f.write(h)
+        f.write(str(h))
         f.close
         delayTime = delay * random.uniform(0.2, 2.0)
         print("Sleeping for %f seconds" % delayTime)
         time.sleep(delayTime)
     else:
-        print "Event No %d not found" % eventNo
+        print("Event No %d not found" % eventNo)
 
 
